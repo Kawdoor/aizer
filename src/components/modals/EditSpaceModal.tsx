@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from "lucide-react";
+import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
@@ -11,22 +11,28 @@ interface Space {
   parent_id: string | null;
 }
 
-interface CreateSpaceModalProps {
-  groupId: string;
+interface EditSpaceModalProps {
+  space: Space;
   spaces: Space[];
   onClose: () => void;
-  onSpaceCreated: () => void;
+  onSpaceUpdated: () => void;
 }
 
-const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
-  groupId,
+const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
+  space,
   spaces,
   onClose,
-  onSpaceCreated,
+  onSpaceUpdated,
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshSession } = useAuth();
+
+  const [formData, setFormData] = useState({
+    name: space.name,
+    description: space.description || "",
+    parent_id: space.parent_id || "",
+  });
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -34,27 +40,24 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       document.body.style.overflow = "unset";
     };
   }, []);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    parent_id: "",
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage(null);
 
+    // Filter out parent spaces that would create a cycle
+    const availableParentSpaces = spaces.filter((s) => s.id !== space.id);
+
     try {
-      const { error } = await supabase.from("spaces").insert([
-        {
-          group_id: groupId,
+      const { error } = await supabase
+        .from("spaces")
+        .update({
           name: formData.name,
           description: formData.description || null,
           parent_id: formData.parent_id || null,
-        },
-      ]);
+        })
+        .eq("id", space.id);
 
       if (error) {
         // Check if it's an authentication error (401, 403)
@@ -64,21 +67,21 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           
           if (refreshed) {
             // Try again with refreshed session
-            const { error: retryError } = await supabase.from("spaces").insert([
-              {
-                group_id: groupId,
+            const { error: retryError } = await supabase
+              .from("spaces")
+              .update({
                 name: formData.name,
                 description: formData.description || null,
                 parent_id: formData.parent_id || null,
-              },
-            ]);
+              })
+              .eq("id", space.id);
             
             if (retryError) {
-              setErrorMessage("No se pudo crear el espacio después de refrescar la sesión. Por favor, inicia sesión nuevamente.");
+              setErrorMessage("No se pudo actualizar el espacio después de refrescar la sesión. Por favor, inicia sesión nuevamente.");
               throw retryError;
             }
             
-            onSpaceCreated();
+            onSpaceUpdated();
             return;
           } else {
             // Couldn't refresh, need to re-login
@@ -87,13 +90,13 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           }
         }
         
-        setErrorMessage("Error al crear el espacio: " + error.message);
+        setErrorMessage("Error al actualizar el espacio: " + error.message);
         throw error;
       }
       
-      onSpaceCreated();
+      onSpaceUpdated();
     } catch (error) {
-      console.error("Error creating space:", error);
+      console.error("Error updating space:", error);
     } finally {
       setLoading(false);
     }
@@ -106,6 +109,9 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  // Filter out parent spaces that would create a cycle
+  const availableParentSpaces = spaces.filter((s) => s.id !== space.id);
 
   return (
     <>
@@ -122,7 +128,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         >
           <div className="flex justify-between items-center p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900">
             <h2 className="text-lg font-light tracking-wider text-white">
-              CREATE SPACE
+              EDIT SPACE
             </h2>
             <button
               onClick={onClose}
@@ -135,7 +141,6 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {errorMessage && (
               <div className="bg-red-900/30 border border-red-800 p-4 mb-4 flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-red-300">{errorMessage}</div>
               </div>
             )}
@@ -166,7 +171,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide focus:outline-none focus:border-white transition-colors"
               >
                 <option value="">No parent space</option>
-                {spaces.map((space) => (
+                {availableParentSpaces.map((space) => (
                   <option key={space.id} value={space.id}>
                     {space.name}
                   </option>
@@ -201,7 +206,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 disabled={loading}
                 className="flex-1 bg-white text-black py-3 font-light text-sm tracking-wider hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "CREATING..." : "CREATE SPACE"}
+                {loading ? "UPDATING..." : "UPDATE SPACE"}
               </button>
             </div>
           </form>
@@ -213,4 +218,4 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   );
 };
 
-export default CreateSpaceModal;
+export default EditSpaceModal;

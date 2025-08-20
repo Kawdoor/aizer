@@ -1,32 +1,53 @@
-import { AlertTriangle, X } from "lucide-react";
+import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
 
-interface Space {
+interface Inventory {
   id: string;
   name: string;
   description: string | null;
-  parent_id: string | null;
+  parent_space_id: string | null;
+  parent_inventory_id: string | null;
 }
 
-interface CreateSpaceModalProps {
-  groupId: string;
-  spaces: Space[];
+interface Item {
+  id: string;
+  name: string;
+  quantity: number;
+  description: string | null;
+  inventory_id: string;
+  color: string | null;
+  price: number | null;
+  measures: any | null;
+}
+
+interface EditItemModalProps {
+  item: Item;
+  inventories: Inventory[];
   onClose: () => void;
-  onSpaceCreated: () => void;
+  onItemUpdated: () => void;
 }
 
-const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
-  groupId,
-  spaces,
+const EditItemModal: React.FC<EditItemModalProps> = ({
+  item,
+  inventories,
   onClose,
-  onSpaceCreated,
+  onItemUpdated,
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshSession } = useAuth();
+
+  const [formData, setFormData] = useState({
+    name: item.name,
+    quantity: item.quantity.toString(),
+    description: item.description || "",
+    inventory_id: item.inventory_id,
+    color: item.color || "",
+    price: item.price?.toString() || "",
+  });
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -34,12 +55,6 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       document.body.style.overflow = "unset";
     };
   }, []);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    parent_id: "",
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,53 +62,67 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     setErrorMessage(null);
 
     try {
-      const { error } = await supabase.from("spaces").insert([
-        {
-          group_id: groupId,
+      const { error } = await supabase
+        .from("items")
+        .update({
           name: formData.name,
+          quantity: parseInt(formData.quantity, 10) || 0,
           description: formData.description || null,
-          parent_id: formData.parent_id || null,
-        },
-      ]);
+          inventory_id: formData.inventory_id,
+          color: formData.color || null,
+          price: formData.price ? parseFloat(formData.price) : null,
+        })
+        .eq("id", item.id);
 
       if (error) {
         // Check if it's an authentication error (401, 403)
-        if (error.code === '401' || error.code === '403' || error.message?.includes('JWT')) {
+        if (
+          error.code === "401" ||
+          error.code === "403" ||
+          error.message?.includes("JWT")
+        ) {
           console.log("Authentication error detected, trying to refresh session...");
           const refreshed = await refreshSession();
-          
+
           if (refreshed) {
             // Try again with refreshed session
-            const { error: retryError } = await supabase.from("spaces").insert([
-              {
-                group_id: groupId,
+            const { error: retryError } = await supabase
+              .from("items")
+              .update({
                 name: formData.name,
+                quantity: parseInt(formData.quantity, 10) || 0,
                 description: formData.description || null,
-                parent_id: formData.parent_id || null,
-              },
-            ]);
-            
+                inventory_id: formData.inventory_id,
+                color: formData.color || null,
+                price: formData.price ? parseFloat(formData.price) : null,
+              })
+              .eq("id", item.id);
+
             if (retryError) {
-              setErrorMessage("No se pudo crear el espacio después de refrescar la sesión. Por favor, inicia sesión nuevamente.");
+              setErrorMessage(
+                "No se pudo actualizar el artículo después de refrescar la sesión. Por favor, inicia sesión nuevamente."
+              );
               throw retryError;
             }
-            
-            onSpaceCreated();
+
+            onItemUpdated();
             return;
           } else {
             // Couldn't refresh, need to re-login
-            setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+            setErrorMessage(
+              "Tu sesión ha expirado. Por favor, inicia sesión nuevamente."
+            );
             throw new Error("Session refresh failed");
           }
         }
-        
-        setErrorMessage("Error al crear el espacio: " + error.message);
+
+        setErrorMessage("Error al actualizar el artículo: " + error.message);
         throw error;
       }
-      
-      onSpaceCreated();
+
+      onItemUpdated();
     } catch (error) {
-      console.error("Error creating space:", error);
+      console.error("Error updating item:", error);
     } finally {
       setLoading(false);
     }
@@ -122,7 +151,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         >
           <div className="flex justify-between items-center p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900">
             <h2 className="text-lg font-light tracking-wider text-white">
-              CREATE SPACE
+              EDIT ITEM
             </h2>
             <button
               onClick={onClose}
@@ -135,11 +164,10 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {errorMessage && (
               <div className="bg-red-900/30 border border-red-800 p-4 mb-4 flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-red-300">{errorMessage}</div>
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                 NAME
@@ -151,24 +179,70 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 onChange={handleChange}
                 required
                 className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
-                placeholder="e.g. Living Room, Kitchen"
+                placeholder="e.g. Hammer, Drill"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                  QUANTITY
+                </label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleChange}
+                  min="0"
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                  PRICE (OPTIONAL)
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  step="0.01"
+                  min="0"
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                COLOR (OPTIONAL)
+              </label>
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
+                placeholder="e.g. Red, Blue, Black"
               />
             </div>
 
             <div>
               <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                PARENT SPACE (OPTIONAL)
+                INVENTORY
               </label>
               <select
-                name="parent_id"
-                value={formData.parent_id}
+                name="inventory_id"
+                value={formData.inventory_id}
                 onChange={handleChange}
+                required
                 className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide focus:outline-none focus:border-white transition-colors"
               >
-                <option value="">No parent space</option>
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.name}
+                <option value="">Select an inventory</option>
+                {inventories.map((inventory) => (
+                  <option key={inventory.id} value={inventory.id}>
+                    {inventory.name}
                   </option>
                 ))}
               </select>
@@ -184,7 +258,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 onChange={handleChange}
                 rows={3}
                 className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="Describe this space"
+                placeholder="Describe this item"
               />
             </div>
 
@@ -201,7 +275,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 disabled={loading}
                 className="flex-1 bg-white text-black py-3 font-light text-sm tracking-wider hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "CREATING..." : "CREATE SPACE"}
+                {loading ? "UPDATING..." : "UPDATE ITEM"}
               </button>
             </div>
           </form>
@@ -213,4 +287,4 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   );
 };
 
-export default CreateSpaceModal;
+export default EditItemModal;
