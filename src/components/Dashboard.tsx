@@ -1,7 +1,7 @@
 import { Box, Home, LogOut, Package, Search, UserCircle, Users } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { Group, useGroups } from "../hooks/useGroups";
+import { useGroups } from "../hooks/useGroups";
 import { supabase } from "../lib/supabase";
 import CreateGroupModal from "./modals/CreateGroupModal";
 import CreateInventoryModal from "./modals/CreateInventoryModal";
@@ -15,7 +15,7 @@ import DeleteConfirmationModal from "./modals/DeleteConfirmationModal";
 import ProfileModal from "./modals/ProfileModal";
 import GroupMembersModal from "./modals/GroupMembersModal";
 import InviteUserModal from "./modals/InviteUserModal";
-import { PendingInvitations } from "./PendingInvitations";
+import NotificationsBell from "./PendingInvitations";
 import { TableView } from "./TableView";
 
 interface Space {
@@ -401,6 +401,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
+            <NotificationsBell onAcceptedInvitation={fetchData} />
             <button
               onClick={() => setActiveModal("profile")}
               className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors p-2 border border-transparent hover:border-zinc-800 rounded-full"
@@ -422,8 +423,7 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Pending Invitations */}
-        <PendingInvitations onAcceptedInvitation={fetchData} />
+  {/* Pending invitations are now in the header notifications bell */}
         
         {/* Controls */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0 mb-8">
@@ -444,7 +444,8 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setActiveModal("space")}
-              className="bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors flex items-center space-x-2"
+              disabled={!selectedGroupId}
+              className={`bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider ${selectedGroupId ? 'text-white hover:border-white' : 'text-gray-600 cursor-not-allowed'} transition-colors flex items-center space-x-2`}
             >
               <Home className="w-4 h-4" />
               <span>ADD SPACE</span>

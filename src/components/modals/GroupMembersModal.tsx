@@ -1,4 +1,4 @@
-import { UserPlus, Shield, X, Check } from "lucide-react";
+import { UserPlus, Shield, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { TableView } from "../TableView";
 import { GroupMember } from "../../hooks/useGroups";
@@ -58,13 +58,14 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   const handleToggleAdmin = async (member: GroupMember) => {
     if (!user) return;
     
-    // Don't allow removing admin from the owner
-    if (member.user_id === ownerId && member.is_admin) {
+    // Don't allow changing role of the owner
+    if (member.user_id === ownerId) {
       return;
     }
     
     try {
-      await updateMemberRole(member.id, !member.is_admin);
+      const makeAdmin = member.role !== 'admin';
+      await updateMemberRole(member.id, makeAdmin);
       await loadMembers();
     } catch (err) {
       console.error("Error updating role:", err);
@@ -133,7 +134,7 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
               <h3 className="text-lg font-light text-white">
                 {members.length} {members.length === 1 ? "Member" : "Members"}
               </h3>
-              {isUserOwner || members.some(m => m.user_id === user?.id && m.is_admin) ? (
+              {isUserOwner || members.some(m => m.user_id === user?.id && m.role === 'admin') ? (
                 <button
                   onClick={onInviteClick}
                   className="flex items-center space-x-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 transition-colors"
@@ -159,22 +160,28 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                   {
                     key: "user_email",
                     label: "EMAIL",
+                    render: (member: GroupMember) => (
+                      <span>{member.user_email ?? member.user_id}</span>
+                    ),
                   },
                   {
                     key: "display_name",
                     label: "NAME",
+                    render: (member: GroupMember) => (
+                      <span>{member.display_name ?? member.user_email ?? member.user_id}</span>
+                    ),
                   },
                   {
-                    key: "is_admin",
+                    key: "role",
                     label: "ROLE",
-                    render: (member) => (
+                    render: (member: GroupMember) => (
                       <div className="flex items-center space-x-2">
                         {member.user_id === ownerId ? (
                           <span className="text-yellow-500 flex items-center">
                             <Shield className="w-4 h-4 mr-1" />
                             Owner
                           </span>
-                        ) : member.is_admin ? (
+                        ) : member.role === 'admin' ? (
                           <span className="text-blue-500 flex items-center">
                             <Shield className="w-4 h-4 mr-1" />
                             Admin
@@ -185,21 +192,12 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                       </div>
                     ),
                   },
-                  {
-                    key: "status",
-                    label: "STATUS",
-                    render: () => (
-                      <span className="text-green-500 flex items-center">
-                        <Check className="w-4 h-4 mr-1" />
-                        Active
-                      </span>
-                    ),
-                  },
                 ]}
-                onEdit={isUserOwner || (user && members.some(m => m.user_id === user.id && m.is_admin)) ? 
+                onEdit={isUserOwner || (user && members.some(m => m.user_id === user.id && m.role === 'admin')) ? 
                   (member) => handleToggleAdmin(member) : undefined}
-                onDelete={isUserOwner || (user && members.some(m => m.user_id === user.id && m.is_admin)) ? 
+                onDelete={isUserOwner || (user && members.some(m => m.user_id === user.id && m.role === 'admin')) ? 
                   (member) => handleRemoveMember(member) : undefined}
+                defaultViewMode="table"
               />
             )}
           </div>

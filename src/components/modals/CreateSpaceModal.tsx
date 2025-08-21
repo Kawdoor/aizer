@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../toast/Toast";
 
 interface Space {
   id: string;
@@ -27,6 +28,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshSession } = useAuth();
+  const { push } = useToast();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -45,55 +47,88 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     e.preventDefault();
     setLoading(true);
     setErrorMessage(null);
-
+    if (!groupId) {
+      setErrorMessage('Selecciona un grupo antes de crear un espacio.');
+      setLoading(false);
+      return;
+    }
     try {
-      const { error } = await supabase.from("spaces").insert([
-        {
-          group_id: groupId,
-          name: formData.name,
-          description: formData.description || null,
-          parent_id: formData.parent_id || null,
-        },
-      ]);
+      const { data: created, error } = await supabase
+        .from('spaces')
+        .insert([
+          {
+            group_id: groupId,
+            name: formData.name,
+            description: formData.description || null,
+            parent_id: formData.parent_id || null,
+          },
+        ])
+        .select()
+        .single();
+
+      if (!error && created) {
+        console.log('Space created:', created);
+        push({ message: `Espacio "${created.name}" creado.`, type: 'success' });
+        onSpaceCreated();
+        return;
+      }
 
       if (error) {
-        // Check if it's an authentication error (401, 403)
+        // RLS error: inform user/admin
+        if (error.code === '42501' || error.message?.includes('row-level security')) {
+          const msg = 'No tienes permisos para crear espacios en este grupo (RLS). Pide al administrador que revise las políticas.';
+          setErrorMessage(msg);
+          push({ message: msg, type: 'error' });
+          console.error('RLS error creating space:', error);
+          throw error;
+        }
+
+        // Try refresh for auth-related errors once
         if (error.code === '401' || error.code === '403' || error.message?.includes('JWT')) {
-          console.log("Authentication error detected, trying to refresh session...");
           const refreshed = await refreshSession();
-          
-          if (refreshed) {
-            // Try again with refreshed session
-            const { error: retryError } = await supabase.from("spaces").insert([
+          if (!refreshed) {
+            const msg = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
+            setErrorMessage(msg);
+            push({ message: msg, type: 'error' });
+            throw new Error('Session refresh failed');
+          }
+
+          const { data: createdRetry, error: retryErr } = await supabase
+            .from('spaces')
+            .insert([
               {
                 group_id: groupId,
                 name: formData.name,
                 description: formData.description || null,
                 parent_id: formData.parent_id || null,
               },
-            ]);
-            
-            if (retryError) {
-              setErrorMessage("No se pudo crear el espacio después de refrescar la sesión. Por favor, inicia sesión nuevamente.");
-              throw retryError;
-            }
-            
+            ])
+            .select()
+            .single();
+
+          if (retryErr) {
+            // If still error after refresh, show message
+            const msg = 'No se pudo crear el espacio después de refrescar la sesión.';
+            setErrorMessage(msg);
+            push({ message: msg, type: 'error' });
+            console.error('Retry error creating space:', retryErr);
+            throw retryErr;
+          }
+
+          if (createdRetry) {
+            push({ message: `Espacio "${createdRetry.name}" creado.`, type: 'success' });
             onSpaceCreated();
             return;
-          } else {
-            // Couldn't refresh, need to re-login
-            setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
-            throw new Error("Session refresh failed");
           }
         }
-        
-        setErrorMessage("Error al crear el espacio: " + error.message);
+
+        // Fallback: generic error
+        setErrorMessage('Error al crear el espacio: ' + (error.message || JSON.stringify(error)));
+        push({ message: 'Error al crear el espacio', type: 'error' });
         throw error;
       }
-      
-      onSpaceCreated();
-    } catch (error) {
-      console.error("Error creating space:", error);
+    } catch (err) {
+      console.error('Error creating space:', err);
     } finally {
       setLoading(false);
     }

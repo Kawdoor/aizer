@@ -15,9 +15,9 @@ export interface GroupMember {
   id: string;
   group_id: string;
   user_id: string;
-  user_email?: string;  // Joined from profiles
-  display_name?: string | null; // Joined from profiles
-  is_admin: boolean;
+  user_email?: string; // joined from profiles
+  display_name?: string | null; // joined from profiles
+  role?: string; // from group_members.role
   created_at: string;
   updated_at: string;
 }
@@ -34,53 +34,50 @@ export const useGroups = () => {
   useEffect(() => {
     if (user) {
       fetchGroups();
+    } else {
+      setGroups([]);
+      setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchGroups = async () => {
     if (!user) return;
 
+    setLoading(true);
     try {
-      // First fetch all groups where user is owner or member
-      const ownedGroups = await supabase
+      const ownedRes = await supabase
         .from('groups')
         .select('*')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
-      const memberGroups = await supabase
+      const memberRes = await supabase
         .from('group_members')
         .select('group_id')
         .eq('user_id', user.id);
 
-      if (ownedGroups.error) throw ownedGroups.error;
-      if (memberGroups.error) throw memberGroups.error;
+      if (ownedRes.error) throw ownedRes.error;
+      if (memberRes.error) throw memberRes.error;
 
-      // Get the actual groups where the user is a member
-      let memberGroupIds = memberGroups.data?.map(m => m.group_id) || [];
-      let memberGroupsData: Group[] = [];
-      
+      const ownedGroups = ownedRes.data || [];
+      const memberGroupIds = memberRes.data?.map((m: any) => m.group_id) || [];
+
+      let memberGroups: Group[] = [];
       if (memberGroupIds.length > 0) {
         const { data, error } = await supabase
           .from('groups')
           .select('*')
           .in('id', memberGroupIds);
-          
         if (error) throw error;
-        memberGroupsData = data || [];
+        memberGroups = data || [];
       }
 
-      // Combine both sets of groups
-      const allGroups = [...(ownedGroups.data || []), ...memberGroupsData];
-      
-      // Remove duplicates if any
-      const uniqueGroups = Array.from(
-        new Map(allGroups.map(item => [item.id, item])).values()
-      );
-
-      setGroups(uniqueGroups);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
+      const allGroups = [...ownedGroups, ...memberGroups];
+      const unique = Array.from(new Map(allGroups.map((g: Group) => [g.id, g])).values());
+      setGroups(unique as GroupWithMembers[]);
+    } catch (err) {
+      console.error('Error fetching groups:', err);
     } finally {
       setLoading(false);
     }
@@ -88,128 +85,190 @@ export const useGroups = () => {
 
   const createGroup = async (name: string, description?: string) => {
     if (!user) return null;
-
     try {
       const { data, error } = await supabase
         .from('groups')
         .insert([{ name, description, owner_id: user.id }])
         .select()
         .single();
-
       if (error) throw error;
       await fetchGroups();
       return data;
-    } catch (error) {
-      console.error('Error creating group:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error creating group:', err);
+      throw err;
     }
   };
 
   const fetchGroupMembers = async (groupId: string) => {
     try {
-      // Get members and their email from profiles table
       const { data: members, error } = await supabase
         .from('group_members')
-        .select(`
-          id,
-          group_id,
-          user_id,
-          is_admin,
-          created_at,
-          updated_at
-        `)
+        .select(
+          `id, group_id, user_id, role, created_at, updated_at`
+        )
         .eq('group_id', groupId);
 
       if (error) throw error;
-      
-      // For each member, get their profile information
-      const membersWithProfiles = await Promise.all(members.map(async (member) => {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('id', member.user_id)
+
+      const membersWithProfiles = await Promise.all(
+        (members || []).map(async (member: any) => {
+          try {
+            // Try to get display_name and email from profiles
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name, email')
+              .eq('id', member.user_id)
+              .single();
+
+            let email = profile?.email;
+
+            // If profiles doesn't have email, try auth.users
+            if (!email) {
+              try {
+                const { data: authUser } = await supabase
+                  .from('auth.users')
+                  .select('email')
+                  .eq('id', member.user_id)
+                  .single();
+                email = authUser?.email;
+              } catch (e) {
+                // ignore
+              }
+            }
+
+            return {
+              ...member,
+              user_email: email || member.user_id,
+              display_name: profile?.display_name || null,
+              role: member.role,
+            } as GroupMember;
+          } catch (profileErr) {
+            console.error('Error fetching profile:', profileErr);
+            return {
+              ...member,
+              user_email: member.user_id,
+              display_name: null,
+              role: member.role,
+            } as GroupMember;
+          }
+        })
+      );
+
+      // Ensure the group owner appears in the members list (owner may not be in group_members)
+      try {
+        const { data: groupData, error: groupErr } = await supabase
+          .from('groups')
+          .select('owner_id')
+          .eq('id', groupId)
           .single();
-        
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          return {
-            ...member,
-            user_email: member.user_id, // Use user_id as email as it's likely the email
-            display_name: null
-          };
+
+        if (!groupErr && groupData?.owner_id) {
+          const ownerId = groupData.owner_id as string;
+          const ownerPresent = (membersWithProfiles || []).some((m: any) => m.user_id === ownerId);
+          if (!ownerPresent) {
+            // fetch owner profile
+            try {
+              const { data: ownerProfile } = await supabase
+                .from('profiles')
+                .select('display_name, email')
+                .eq('id', ownerId)
+                .single();
+
+              // try to populate owner email if possible
+              let ownerEmail: string | undefined = ownerProfile?.email;
+              if (!ownerEmail) {
+                try {
+                  const { data: authUser } = await supabase
+                    .from('auth.users')
+                    .select('email')
+                    .eq('id', ownerId)
+                    .single();
+                  ownerEmail = authUser?.email;
+                } catch (e) {
+                  // ignore
+                }
+              }
+
+              const ownerEntry: GroupMember = {
+                  id: `owner-${ownerId}`,
+                  group_id: groupId,
+                  user_id: ownerId,
+                  user_email: ownerEmail || ownerId,
+                  display_name: ownerProfile?.display_name || null,
+                  role: 'owner',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+
+              membersWithProfiles.unshift(ownerEntry);
+            } catch (ownerProfileErr) {
+              console.error('Error fetching owner profile:', ownerProfileErr);
+            }
+          }
         }
-        
-        return {
-          ...member,
-          user_email: member.user_id, // In Auth system, the ID is typically the email
-          display_name: profile?.display_name || null
-        };
-      }));
-      
-      return membersWithProfiles;
-    } catch (error) {
-      console.error('Error fetching group members:', error);
-      throw error;
+      } catch (e) {
+        // non-fatal
+      }
+
+      return membersWithProfiles as GroupMember[];
+    } catch (err) {
+      console.error('Error fetching group members:', err);
+      throw err;
     }
   };
 
-  const inviteUserToGroup = async (groupId: string, email: string, isAdmin: boolean = false) => {
+  const inviteUserToGroup = async (groupId: string, email: string, isAdmin?: boolean) => {
     try {
-      // First check if the user exists
-      const { data: userData, error: userError } = await supabase
+      // Try to find user id by email in profiles (adjust if your schema differs)
+      const { data: userData, error: userErr } = await supabase
         .from('profiles')
         .select('id')
-        .eq('id', email)
+        .eq('email', email)
         .single();
 
-      if (userError) {
+      if (userErr || !userData) {
         throw new Error('User not found with this email');
       }
 
-      // Check if the user is already a member or invited
-      const { data: existingMember, error: memberError } = await supabase
+      const { data: existing, error: existingErr } = await supabase
         .from('group_members')
         .select('*')
         .eq('group_id', groupId)
         .eq('user_id', userData.id);
 
-      if (memberError) throw memberError;
+      if (existingErr) throw existingErr;
+      if (existing && (existing as any).length > 0) throw new Error('User is already a member');
 
-      if (existingMember && existingMember.length > 0) {
-        throw new Error('User is already a member or has a pending invitation');
-      }
-
-      // Create the invitation
+      const role = isAdmin ? 'admin' : 'member';
       const { data, error } = await supabase
         .from('group_members')
-        .insert([{
-          group_id: groupId,
-          user_id: userData.id,
-          is_admin: isAdmin
-        }])
+        .insert([{ group_id: groupId, user_id: userData.id, role }])
         .select();
 
       if (error) throw error;
+      await fetchGroups();
       return data;
-    } catch (error) {
-      console.error('Error inviting user to group:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error inviting user to group:', err);
+      throw err;
     }
   };
 
-  const updateMemberRole = async (memberId: string, isAdmin: boolean) => {
+  const updateMemberRole = async (_memberId: string, _isAdmin: boolean) => {
+    // Update the role column on group_members: set to 'admin' or 'member'
     try {
-      const { data, error } = await supabase
+      const newRole = _isAdmin ? 'admin' : 'member';
+      const { error } = await supabase
         .from('group_members')
-        .update({ is_admin: isAdmin })
-        .eq('id', memberId)
-        .select();
-
+        .update({ role: newRole })
+        .eq('id', _memberId);
       if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating member role:', error);
-      throw error;
+      await fetchGroups();
+      return { updated: true };
+    } catch (err) {
+      console.error('Error updating member role:', err);
+      throw err;
     }
   };
 
@@ -219,83 +278,59 @@ export const useGroups = () => {
         .from('group_members')
         .delete()
         .eq('id', memberId);
-
       if (error) throw error;
+      await fetchGroups();
       return true;
-    } catch (error) {
-      console.error('Error removing member from group:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error removing member from group:', err);
+      throw err;
     }
   };
 
-  const acceptInvitation = async (memberId: string) => {
-    try {
-      // Since we don't have a status column, just keep the member in the table
-      await fetchGroups();
-      return { accepted: true };
-    } catch (error) {
-      console.error('Error accepting invitation:', error);
-      throw error;
-    }
+  const acceptInvitation = async (_memberId: string) => {
+    // No status column: accepting is a no-op server-side; simply refresh local state
+    await fetchGroups();
+    return { accepted: true };
   };
 
   const rejectInvitation = async (memberId: string) => {
     try {
-      // Since we don't have a status column, rejecting means removing the member
       const { error } = await supabase
         .from('group_members')
         .delete()
         .eq('id', memberId);
-
       if (error) throw error;
       await fetchGroups();
       return { rejected: true };
-    } catch (error) {
-      console.error('Error rejecting invitation:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error rejecting invitation:', err);
+      throw err;
     }
   };
 
   const fetchPendingInvitations = async () => {
     if (!user) return [];
-
     try {
-      // Without the status column, we'll consider all group_members as pending invitations
-      // We'll need to filter on the frontend based on the groups the user is already a member of
       const { data, error } = await supabase
         .from('group_members')
-        .select(`
-          id,
-          group_id,
-          is_admin,
-          created_at,
-          groups:group_id (
-            name,
-            description
-          )
-        `)
+        .select(`id, group_id, created_at, groups:group_id (id, name, description)`)
         .eq('user_id', user.id);
 
       if (error) throw error;
-      
-      // We need to filter out the groups where the user is already a member
-      // by checking against the groups array
+
       const groupIds = groups.map(g => g.id);
-      const pendingInvitations = data?.filter(
-        invitation => !groupIds.includes(invitation.group_id)
-      ) || [];
-      
-      return pendingInvitations;
-    } catch (error) {
-      console.error('Error fetching pending invitations:', error);
-      throw error;
+      const pending = (data || []).filter((inv: any) => !groupIds.includes(inv.group_id));
+      return pending;
+    } catch (err) {
+      console.error('Error fetching pending invitations:', err);
+      throw err;
     }
   };
 
-  return { 
-    groups, 
-    loading, 
-    createGroup, 
+  return {
+    groups,
+    loading,
+    createGroup,
     refetch: fetchGroups,
     fetchGroupMembers,
     inviteUserToGroup,
@@ -303,6 +338,6 @@ export const useGroups = () => {
     removeMemberFromGroup,
     acceptInvitation,
     rejectInvitation,
-    fetchPendingInvitations
+    fetchPendingInvitations,
   };
 };
