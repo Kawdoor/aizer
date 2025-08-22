@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../toast/Toast";
 
 interface Space {
   id: string;
@@ -37,6 +38,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshSession } = useAuth();
+  const { push } = useToast();
 
   const [formData, setFormData] = useState({
     name: inventory.name,
@@ -122,6 +124,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
       }
 
       onInventoryUpdated();
+  try { push({ message: `Inventario "${formData.name}" actualizado.`, type: 'success' }); } catch {}
     } catch (error) {
       console.error("Error updating inventory:", error);
     } finally {

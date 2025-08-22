@@ -6,7 +6,8 @@ interface DeleteConfirmationModalProps {
   title: string;
   message: string;
   onClose: () => void;
-  onConfirm: () => void;
+  // allow async confirm handlers
+  onConfirm: () => Promise<void> | void;
 }
 
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
@@ -15,6 +16,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const [loading, setLoading] = React.useState(false);
   return (
     <>
       <div
@@ -52,13 +54,22 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 CANCEL
               </button>
               <button
-                onClick={() => {
-                  onConfirm();
-                  onClose();
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    await onConfirm();
+                    onClose();
+                  } catch (err) {
+                    // keep modal open and log error
+                    console.error('Error in delete confirm:', err);
+                  } finally {
+                    setLoading(false);
+                  }
                 }}
-                className="flex-1 bg-red-700 text-white py-3 font-light text-sm tracking-wider hover:bg-red-600 transition-colors"
+                disabled={loading}
+                className="flex-1 bg-red-700 text-white py-3 font-light text-sm tracking-wider hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                DELETE
+                {loading ? 'DELETING...' : 'DELETE'}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../toast/Toast";
 
 interface Space {
   id: string;
@@ -27,6 +28,7 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshSession } = useAuth();
+  const { push } = useToast();
 
   const [formData, setFormData] = useState({
     name: space.name,
@@ -46,8 +48,7 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
     setLoading(true);
     setErrorMessage(null);
 
-    // Filter out parent spaces that would create a cycle
-    const availableParentSpaces = spaces.filter((s) => s.id !== space.id);
+  // (availableParentSpaces is computed below for the select)
 
     try {
       const { error } = await supabase
@@ -94,7 +95,8 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
         throw error;
       }
       
-      onSpaceUpdated();
+  onSpaceUpdated();
+  try { push({ message: `Espacio "${formData.name}" actualizado.`, type: 'success' }); } catch {}
     } catch (error) {
       console.error("Error updating space:", error);
     } finally {

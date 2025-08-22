@@ -1,5 +1,5 @@
-import { Box, Home, LogOut, Package, Search, UserCircle, Users } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { LogOut, Search, UserCircle, Users } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useGroups } from "../hooks/useGroups";
 import { supabase } from "../lib/supabase";
@@ -17,6 +17,7 @@ import GroupMembersModal from "./modals/GroupMembersModal";
 import InviteUserModal from "./modals/InviteUserModal";
 import NotificationsBell from "./PendingInvitations";
 import { TableView } from "./TableView";
+import { useToast } from "./toast/Toast";
 
 interface Space {
   id: string;
@@ -49,6 +50,7 @@ interface Item {
 
 const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { push } = useToast();
   const { 
     groups, 
     loading: groupsLoading, 
@@ -80,6 +82,7 @@ const Dashboard: React.FC = () => {
   >(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  // track selected space to show its inventories in the INVENTORIES section
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(
     null
   );
@@ -245,7 +248,14 @@ const Dashboard: React.FC = () => {
   
   // Override setSelectedSpace to clear search results when selecting a space
   const handleSelectSpace = (space: Space) => {
-    setSelectedSpace(space);
+    // Select or toggle off the selected space. The INVENTORIES section
+    // will show inventories for the selected space.
+    if (selectedSpace?.id === space.id) {
+      setSelectedSpace(null);
+    } else {
+      setSelectedSpace(space);
+    }
+
     // Clear search when selecting a space
     if (searchTerm) {
       setSearchTerm("");
@@ -266,9 +276,11 @@ const Dashboard: React.FC = () => {
       if (selectedSpace?.id === space.id) {
         setSelectedSpace(null);
       }
+  // toast success
+  try { push({ message: `Espacio "${space.name}" eliminado.`, type: 'success' }); } catch {}
     } catch (error) {
       console.error("Error deleting space:", error);
-      alert("No se pudo eliminar el espacio. Es posible que contenga inventarios.");
+  try { push({ message: 'No se pudo eliminar el espacio. Es posible que contenga inventarios.', type: 'error' }); } catch {}
     }
   };
 
@@ -280,9 +292,10 @@ const Dashboard: React.FC = () => {
       if (selectedInventory?.id === inventory.id) {
         setSelectedInventory(null);
       }
+  try { push({ message: `Inventario "${inventory.name}" eliminado.`, type: 'success' }); } catch {}
     } catch (error) {
       console.error("Error deleting inventory:", error);
-      alert("No se pudo eliminar el inventario. Es posible que contenga artículos.");
+  try { push({ message: 'No se pudo eliminar el inventario. Es posible que contenga artículos.', type: 'error' }); } catch {}
     }
   };
 
@@ -291,9 +304,10 @@ const Dashboard: React.FC = () => {
       const { error } = await supabase.from("items").delete().eq("id", item.id);
       if (error) throw error;
       await fetchData();
+  try { push({ message: `Artículo "${item.name}" eliminado.`, type: 'success' }); } catch {}
     } catch (error) {
       console.error("Error deleting item:", error);
-      alert("No se pudo eliminar el artículo.");
+  try { push({ message: 'No se pudo eliminar el artículo.', type: 'error' }); } catch {}
     }
   };
 
@@ -427,7 +441,7 @@ const Dashboard: React.FC = () => {
         
         {/* Controls */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0 mb-8">
-          <div className="relative">
+      <div className="relative w-full max-w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="text"
@@ -437,35 +451,12 @@ const Dashboard: React.FC = () => {
                 setSearchTerm(e.target.value);
                 handleSearch(e.target.value);
               }}
-              className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-96"
+        className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-full sm:w-96"
             />
           </div>
 
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setActiveModal("space")}
-              disabled={!selectedGroupId}
-              className={`bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider ${selectedGroupId ? 'text-white hover:border-white' : 'text-gray-600 cursor-not-allowed'} transition-colors flex items-center space-x-2`}
-            >
-              <Home className="w-4 h-4" />
-              <span>ADD SPACE</span>
-            </button>
-
-            <button
-              onClick={() => setActiveModal("inventory")}
-              className="bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors flex items-center space-x-2"
-            >
-              <Package className="w-4 h-4" />
-              <span>ADD INVENTORY</span>
-            </button>
-
-            <button
-              onClick={() => setActiveModal("item")}
-              className="bg-white text-black px-6 py-2 font-light text-sm tracking-wider hover:bg-gray-100 transition-colors flex items-center space-x-2"
-            >
-              <Box className="w-4 h-4" />
-              <span>ADD ITEM</span>
-            </button>
+          <div className="flex items-center space-x-4 flex-wrap">
+            <CreateMenu selectedGroupId={selectedGroupId} onOpenModal={(t) => setActiveModal(t)} />
           </div>
         </div>
 
@@ -667,147 +658,9 @@ const Dashboard: React.FC = () => {
           )}
           
           {/* Normal Content (when not searching) */}
-          {!searchResults.isSearching && selectedSpace && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-light text-white tracking-wider">
-                  {selectedSpace.name}
-                </h2>
-                <button
-                  onClick={() => setSelectedSpace(null)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Inventories in Selected Space */}
-              <div className="mb-8">
-                <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
-                  INVENTORIES
-                </h3>
-                {inventories.filter(
-                  (inv) => inv.parent_space_id === selectedSpace.id
-                ).length === 0 ? (
-                  <p className="text-gray-500">No inventories in this space</p>
-                ) : (
-                  <TableView
-                    data={inventories.filter(
-                      (inv) => inv.parent_space_id === selectedSpace.id
-                    )}
-                    columns={[
-                      {
-                        key: "name",
-                        label: "NAME",
-                      },
-                      {
-                        key: "description",
-                        label: "DESCRIPTION",
-                      },
-                      {
-                        key: "items",
-                        label: "ITEMS",
-                        render: (inventory) => (
-                          <span>
-                            {
-                              items.filter(
-                                (item) => item.inventory_id === inventory.id
-                              ).length
-                            }
-                          </span>
-                        ),
-                      },
-                      {
-                        key: "created_at",
-                        label: "CREATED",
-                        render: (inventory) => (
-                          <span>
-                            {new Date(inventory.created_at).toLocaleDateString()}
-                          </span>
-                        ),
-                      },
-                    ]}
-                    onEdit={handleEditInventory}
-                    onDelete={handleDeleteInventory}
-                    onSelect={setSelectedInventory}
-                    defaultViewMode="grid"
-                  />
-                )}
-              </div>
-
-              {/* Items in Selected Inventory */}
-              {selectedInventory && (
-                <div>
-                  <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
-                    ITEMS IN {selectedInventory.name}
-                  </h3>
-                  {items.filter(
-                    (item) => item.inventory_id === selectedInventory.id
-                  ).length === 0 ? (
-                    <p className="text-gray-500">No items in this inventory</p>
-                  ) : (
-                    <TableView
-                      data={items.filter(
-                        (item) => item.inventory_id === selectedInventory.id
-                      )}
-                      columns={[
-                        {
-                          key: "name",
-                          label: "NAME",
-                        },
-                        {
-                          key: "quantity",
-                          label: "QUANTITY",
-                        },
-                        {
-                          key: "price",
-                          label: "PRICE",
-                          render: (item) =>
-                            item.price ? `$${item.price.toFixed(2)}` : "-",
-                        },
-                        {
-                          key: "description",
-                          label: "DESCRIPTION",
-                        },
-                        {
-                          key: "color",
-                          label: "COLOR",
-                          render: (item) =>
-                            item.color ? (
-                              <div className="flex items-center space-x-2">
-                                <div
-                                  className="w-4 h-4 rounded-full"
-                                  style={{ backgroundColor: item.color }}
-                                ></div>
-                                <span>{item.color}</span>
-                              </div>
-                            ) : (
-                              "-"
-                            ),
-                        },
-                        {
-                          key: "created_at",
-                          label: "CREATED",
-                          render: (item) => (
-                            <span>
-                              {new Date(item.created_at).toLocaleDateString()}
-                            </span>
-                          ),
-                        },
-                      ]}
-                      onEdit={handleEditItem}
-                      onDelete={handleDeleteItem}
-                      onSelect={setSelectedItem}
-                      defaultViewMode="table"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Space List */}
-          {!selectedSpace && !searchResults.isSearching && (
+          {!searchResults.isSearching && (
             <div>
               <h2 className="text-xl font-light text-white tracking-wider mb-4">
                 SPACES
@@ -850,7 +703,80 @@ const Dashboard: React.FC = () => {
                   onEdit={handleEditSpace}
                   onDelete={handleDeleteSpace}
                   onSelect={handleSelectSpace}
+                  selectedItemId={selectedSpace ? (selectedSpace as Space).id : null}
                   defaultViewMode="grid"
+                />
+              )}
+            </div>
+          )}
+          
+          {/* Inventories List (shows under spaces, same style) */}
+          {!searchResults.isSearching && selectedSpace && (
+            <div className="mt-8">
+              <h2 className="text-xl font-light text-white tracking-wider mb-4">
+                INVENTORIES
+              </h2>
+              {(
+                selectedSpace ? inventories.filter(inv => inv.parent_space_id === selectedSpace.id) : inventories
+              ).length === 0 ? (
+                <p className="text-gray-500">No inventories available</p>
+              ) : (
+                <TableView
+                  data={selectedSpace ? inventories.filter(inv => inv.parent_space_id === selectedSpace.id) : inventories}
+                  columns={[
+                    { key: 'name', label: 'NAME' },
+                    { key: 'description', label: 'DESCRIPTION' },
+                    {
+                      key: 'items',
+                      label: 'ITEMS',
+                      render: (inventory: Inventory) => (
+                        <span>
+                          {items.filter((item) => item.inventory_id === inventory.id).length}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: 'created_at',
+                      label: 'CREATED',
+                      render: (inventory: Inventory) => (
+                        <span>{new Date(inventory.created_at).toLocaleDateString()}</span>
+                      ),
+                    },
+                  ]}
+                   onEdit={handleEditInventory}
+                   onDelete={handleDeleteInventory}
+                   onSelect={(inv: Inventory) => setSelectedInventory(inv)}
+                   selectedItemId={selectedInventory ? (selectedInventory as Inventory).id : null}
+                   defaultViewMode="grid"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Items for selected inventory (appear under INVENTORIES) */}
+          {!searchResults.isSearching && selectedInventory && (
+            <div className="mt-6">
+              <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
+                ITEMS IN {selectedInventory.name}
+              </h3>
+              {items.filter(item => item.inventory_id === selectedInventory.id).length === 0 ? (
+                <p className="text-gray-500">No items in this inventory</p>
+              ) : (
+                <TableView
+                  data={items.filter(item => item.inventory_id === selectedInventory.id)}
+                  columns={[
+                    { key: 'name', label: 'NAME' },
+                    { key: 'quantity', label: 'QUANTITY' },
+                    { key: 'price', label: 'PRICE', render: (item: Item) => item.price ? `$${item.price.toFixed(2)}` : '-' },
+                    { key: 'description', label: 'DESCRIPTION' },
+                    { key: 'color', label: 'COLOR', render: (item: Item) => item.color ? (<div className="flex items-center space-x-2"><div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }}></div><span>{item.color}</span></div>) : '-' },
+                    { key: 'created_at', label: 'CREATED', render: (item: Item) => (<span>{new Date(item.created_at).toLocaleDateString()}</span>) },
+                  ]}
+                  onEdit={handleEditItem}
+                  onDelete={handleDeleteItem}
+                  onSelect={setSelectedItem}
+                  selectedItemId={selectedItem?.id ?? null}
+                  defaultViewMode="table"
                 />
               )}
             </div>
@@ -991,3 +917,72 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+// --- CreateMenu component ---
+type CreateMenuProps = {
+  selectedGroupId: string;
+  onOpenModal: (type: 'space' | 'inventory' | 'item') => void;
+};
+
+const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!ref.current) return;
+      if (!ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative w-full sm:w-auto">
+      <button
+        onClick={() => setOpen((s) => !s)}
+        className={`w-full sm:w-auto bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors flex items-center justify-between space-x-2`}
+        disabled={!selectedGroupId}
+      >
+        <span>+ NEW</span>
+        <svg className="w-4 h-4 ml-2 text-gray-400" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-full sm:w-56 bg-zinc-900 border border-zinc-800 rounded shadow-lg z-40">
+          <ul>
+            <li>
+              <button
+                onClick={() => { setOpen(false); onOpenModal('space'); }}
+                className="w-full text-left px-4 py-2 hover:bg-zinc-800"
+                disabled={!selectedGroupId}
+              >
+                Add Space
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => { setOpen(false); onOpenModal('inventory'); }}
+                className="w-full text-left px-4 py-2 hover:bg-zinc-800"
+                disabled={!selectedGroupId}
+              >
+                Add Inventory
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => { setOpen(false); onOpenModal('item'); }}
+                className="w-full text-left px-4 py-2 hover:bg-zinc-800"
+                disabled={!selectedGroupId}
+              >
+                Add Item
+              </button>
+            </li>
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};

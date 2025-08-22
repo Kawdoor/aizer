@@ -1,5 +1,5 @@
 import { Edit, Grid, List, Trash } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface TableViewProps<T> {
   data: T[];
@@ -14,6 +14,8 @@ interface TableViewProps<T> {
   idField?: keyof T;
   defaultViewMode?: "grid" | "table";
   selectedItemId?: string | null;
+  expandedIds?: string[];
+  renderExpanded?: (item: T) => React.ReactNode;
 }
 
 export const TableView = <T extends Record<string, any>>({
@@ -25,8 +27,26 @@ export const TableView = <T extends Record<string, any>>({
   idField = "id" as keyof T,
   defaultViewMode = "table",
   selectedItemId = null,
+  expandedIds,
+  renderExpanded,
 }: TableViewProps<T>) => {
-  const [viewMode, setViewMode] = useState<"grid" | "table">(defaultViewMode);
+  const [viewMode, setViewMode] = useState<string>(defaultViewMode as string);
+
+  // Prefer grid view on small/mobile screens to avoid wide tables that break layout
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const setGridIfSmall = () => {
+      const isSmall = window.innerWidth <= 640; // tailwind 'sm' breakpoint
+      if (isSmall && defaultViewMode === "table") {
+        setViewMode("grid");
+      }
+    };
+
+    setGridIfSmall();
+    window.addEventListener("resize", setGridIfSmall);
+    return () => window.removeEventListener("resize", setGridIfSmall);
+  }, [defaultViewMode]);
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -41,7 +61,7 @@ export const TableView = <T extends Record<string, any>>({
             <button
               onClick={() => setViewMode("grid")}
               className={`p-1 ${
-                viewMode === "grid"
+                (viewMode as any) === "grid"
                   ? "bg-zinc-800 text-white"
                   : "text-gray-500 hover:text-white"
               }`}
@@ -51,7 +71,7 @@ export const TableView = <T extends Record<string, any>>({
             <button
               onClick={() => setViewMode("table")}
               className={`p-1 ${
-                viewMode === "table"
+                (viewMode as any) === "table"
                   ? "bg-zinc-800 text-white"
                   : "text-gray-500 hover:text-white"
               }`}
@@ -62,12 +82,12 @@ export const TableView = <T extends Record<string, any>>({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.map((item) => (
+            <React.Fragment key={String(item[idField])}>
             <div
-              key={String(item[idField])}
               onClick={() => onSelect && onSelect(item)}
               className={`p-4 text-left border ${
                 selectedItemId === String(item[idField])
-                  ? "border-white bg-zinc-800/50"
+                  ? "border-white bg-white text-black"
                   : "border-zinc-800 hover:border-zinc-700"
               } transition-colors relative group`}
             >
@@ -117,6 +137,13 @@ export const TableView = <T extends Record<string, any>>({
                 ))}
               </div>
             </div>
+            {/* render expanded content directly after the item when requested (grid mode) */}
+            {expandedIds && renderExpanded && expandedIds.includes(String(item[idField])) && (
+              <div key={`expanded-${String(item[idField])}`} className="col-span-full p-3 border-t border-zinc-800">
+                {renderExpanded(item)}
+              </div>
+            )}
+            </React.Fragment>
           ))}
         </div>
       </div>
@@ -168,12 +195,12 @@ export const TableView = <T extends Record<string, any>>({
           </thead>
           <tbody className="divide-y divide-zinc-800">
             {data.map((item) => (
+              <React.Fragment key={String(item[idField])}>
               <tr
-                key={String(item[idField])}
                 onClick={() => onSelect && onSelect(item)}
                 className={`cursor-pointer transition-colors ${
                   selectedItemId === String(item[idField])
-                    ? "bg-zinc-800/50"
+                    ? "bg-white text-black"
                     : "hover:bg-zinc-900/50"
                 }`}
               >
@@ -216,6 +243,14 @@ export const TableView = <T extends Record<string, any>>({
                   </td>
                 )}
               </tr>
+              {expandedIds && renderExpanded && expandedIds.includes(String(item[idField])) && (
+                <tr className="bg-zinc-900">
+                  <td colSpan={columns.length + ((onEdit || onDelete) ? 1 : 0)} className="py-2 px-4">
+                    {renderExpanded(item)}
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
