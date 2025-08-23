@@ -311,6 +311,33 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // --- Drag & Drop handlers ---
+  const handleMoveItemToInventory = async (targetInventoryId: string, payload: { id: string; type: string }) => {
+    // payload.id is the item id being moved
+    try {
+      const { error } = await supabase.from('items').update({ inventory_id: targetInventoryId, parent_space_id: null }).eq('id', payload.id);
+      if (error) throw error;
+      await fetchData();
+      try { push({ message: 'Item moved.', type: 'success' }); } catch {}
+    } catch (err) {
+      console.error('Error moving item:', err);
+      try { push({ message: 'No se pudo mover el artículo.', type: 'error' }); } catch {}
+    }
+  };
+
+  const handleMoveItemToSpace = async (targetSpaceId: string, payload: { id: string; type: string }) => {
+    // Moving an item to a space will unassign its inventory (set inventory_id to null) and set parent_space_id
+    try {
+      const { error } = await supabase.from('items').update({ inventory_id: null, parent_space_id: targetSpaceId }).eq('id', payload.id);
+      if (error) throw error;
+      await fetchData();
+      try { push({ message: 'Item moved to space.', type: 'success' }); } catch {}
+    } catch (err) {
+      console.error('Error moving item to space:', err);
+      try { push({ message: 'No se pudo mover el artículo.', type: 'error' }); } catch {}
+    }
+  };
+
   const handleDeleteSpace = (space: Space) => {
     setDeleteModalConfig({
       title: "Delete Space",
@@ -705,6 +732,12 @@ const Dashboard: React.FC = () => {
                   onSelect={handleSelectSpace}
                   selectedItemId={selectedSpace ? (selectedSpace as Space).id : null}
                   defaultViewMode="grid"
+                  dragType="space"
+                  onDrop={async (target: any, payload) => {
+                    if (payload.type === 'item') {
+                      await handleMoveItemToSpace(target.id, payload);
+                    }
+                  }}
                 />
               )}
             </div>
@@ -748,6 +781,13 @@ const Dashboard: React.FC = () => {
                    onSelect={(inv: Inventory) => setSelectedInventory(inv)}
                    selectedItemId={selectedInventory ? (selectedInventory as Inventory).id : null}
                    defaultViewMode="grid"
+                   dragType="inventory"
+                   onDrop={async (target: any, payload) => {
+                     // if payload.type is 'item', move that item into this inventory
+                     if (payload.type === 'item') {
+                       await handleMoveItemToInventory(target.id, payload);
+                     }
+                   }}
                 />
               )}
             </div>
@@ -777,6 +817,7 @@ const Dashboard: React.FC = () => {
                   onSelect={setSelectedItem}
                   selectedItemId={selectedItem?.id ?? null}
                   defaultViewMode="table"
+                  dragType="item"
                 />
               )}
             </div>
@@ -938,16 +979,14 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal })
   }, []);
 
   return (
-    <div ref={ref} className="relative w-full sm:w-auto">
+      <div ref={ref} className="relative w-full sm:w-auto">
       <button
         onClick={() => setOpen((s) => !s)}
-        className={`w-full sm:w-auto bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors flex items-center justify-between space-x-2`}
+        className={`w-full sm:w-auto bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors flex items-center justify-center`}
         disabled={!selectedGroupId}
+        aria-label="Create menu"
       >
-        <span>+ NEW</span>
-        <svg className="w-4 h-4 ml-2 text-gray-400" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <span className="text-lg">+</span>
       </button>
 
       {open && (

@@ -16,6 +16,11 @@ interface TableViewProps<T> {
   selectedItemId?: string | null;
   expandedIds?: string[];
   renderExpanded?: (item: T) => React.ReactNode;
+  // Optional drag/drop handlers. If `dragType` is provided, rows/cards become draggable and
+  // will set a dataTransfer payload of { id, type } where id is the idField value.
+  dragType?: string;
+  onDrop?: (target: T, payload: { id: string; type: string }) => void;
+  onDragStart?: (item: T) => void;
 }
 
 export const TableView = <T extends Record<string, any>>({
@@ -29,6 +34,9 @@ export const TableView = <T extends Record<string, any>>({
   selectedItemId = null,
   expandedIds,
   renderExpanded,
+  dragType,
+  onDrop,
+  onDragStart,
 }: TableViewProps<T>) => {
   const [viewMode, setViewMode] = useState<string>(defaultViewMode as string);
 
@@ -51,6 +59,35 @@ export const TableView = <T extends Record<string, any>>({
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
     action();
+  };
+
+  const handleDragStart = (e: React.DragEvent, item: T) => {
+    try {
+      const payload = { id: String(item[idField]), type: dragType || "item" };
+      e.dataTransfer.setData("application/x-aizer", JSON.stringify(payload));
+      // allow drop effects
+      e.dataTransfer.effectAllowed = "move";
+      if (onDragStart) onDragStart(item);
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, target: T) => {
+    e.preventDefault();
+    try {
+      const raw = e.dataTransfer.getData("application/x-aizer");
+      if (!raw) return;
+      const payload = JSON.parse(raw) as { id: string; type: string };
+      if (onDrop) onDrop(target, payload);
+    } catch (err) {
+      // ignore parse errors
+    }
   };
 
   if (viewMode === "grid") {
@@ -85,6 +122,10 @@ export const TableView = <T extends Record<string, any>>({
             <React.Fragment key={String(item[idField])}>
             <div
               onClick={() => onSelect && onSelect(item)}
+              draggable={!!dragType}
+              onDragStart={dragType ? (e) => handleDragStart(e, item) : undefined}
+              onDragOver={onDrop ? handleDragOver : undefined}
+              onDrop={onDrop ? (e) => handleDrop(e, item) : undefined}
               className={`p-4 text-left border ${
                 selectedItemId === String(item[idField])
                   ? "border-white bg-white text-black"
@@ -198,6 +239,10 @@ export const TableView = <T extends Record<string, any>>({
               <React.Fragment key={String(item[idField])}>
               <tr
                 onClick={() => onSelect && onSelect(item)}
+                draggable={!!dragType}
+                onDragStart={dragType ? (e) => handleDragStart(e as any, item) : undefined}
+                onDragOver={onDrop ? handleDragOver : undefined}
+                onDrop={onDrop ? (e) => handleDrop(e as any, item) : undefined}
                 className={`cursor-pointer transition-colors ${
                   selectedItemId === String(item[idField])
                     ? "bg-white text-black"
