@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ToastProvider } from './components/toast/Toast';
-import LoginForm from './components/LoginForm';
-import Dashboard from './components/Dashboard';
+import { AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import Dashboard from "./components/Dashboard";
+import LoginForm from "./components/LoginForm";
+import { ToastProvider } from "./components/toast/Toast";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const AppContent: React.FC = () => {
   const { user, loading, authError, signOut } = useAuth();
@@ -13,7 +13,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (authError) {
       console.error("Auth error detected:", authError);
-      
+
       // Check for token expiration or invalid token errors
       if (
         authError.message?.includes("Invalid Refresh Token") ||
@@ -54,7 +54,8 @@ const AppContent: React.FC = () => {
             <h2 className="text-white text-lg font-light">Sesión Expirada</h2>
           </div>
           <p className="text-gray-300 mb-6">
-            Tu sesión ha expirado. Por favor, inicia sesión nuevamente para continuar.
+            Tu sesión ha expirado. Por favor, inicia sesión nuevamente para
+            continuar.
           </p>
           <button
             onClick={handleSignOut}

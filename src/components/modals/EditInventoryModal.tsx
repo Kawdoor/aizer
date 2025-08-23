@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
-import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 import { useToast } from "../toast/Toast";
+import { ModalAnimations } from "./ModalAnimations";
 
 interface Space {
   id: string;
@@ -86,7 +86,9 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
           error.code === "403" ||
           error.message?.includes("JWT")
         ) {
-          console.log("Authentication error detected, trying to refresh session...");
+          console.log(
+            "Authentication error detected, trying to refresh session..."
+          );
           const refreshed = await refreshSession();
 
           if (refreshed) {
@@ -124,7 +126,12 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
       }
 
       onInventoryUpdated();
-  try { push({ message: `Inventario "${formData.name}" actualizado.`, type: 'success' }); } catch {}
+      try {
+        push({
+          message: `Inventario "${formData.name}" actualizado.`,
+          type: "success",
+        });
+      } catch {}
     } catch (error) {
       console.error("Error updating inventory:", error);
     } finally {
@@ -138,7 +145,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
     >
   ) => {
     const { name, value } = e.target;
-    
+
     // If parent_space_id is selected, clear parent_inventory_id
     if (name === "parent_space_id" && value) {
       setFormData({
@@ -160,7 +167,9 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
   };
 
   // Filter out inventories that would create a cycle
-  const availableInventories = inventories.filter((inv) => inv.id !== inventory.id);
+  const availableInventories = inventories.filter(
+    (inv) => inv.id !== inventory.id
+  );
 
   return (
     <>

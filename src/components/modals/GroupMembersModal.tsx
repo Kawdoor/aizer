@@ -1,8 +1,8 @@
-import { UserPlus, Shield, X } from "lucide-react";
+import { Shield, UserPlus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { TableView } from "../TableView";
-import { GroupMember } from "../../hooks/useGroups";
 import { useAuth } from "../../contexts/AuthContext";
+import { GroupMember } from "../../hooks/useGroups";
+import { TableView } from "../TableView";
 import { ModalAnimations } from "./ModalAnimations";
 
 interface GroupMembersModalProps {
@@ -34,16 +34,16 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   useEffect(() => {
     document.body.style.overflow = "hidden";
     loadMembers();
-    
+
     return () => {
       document.body.style.overflow = "unset";
     };
   }, [groupId]);
-  
+
   const loadMembers = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const membersList = await fetchMembers(groupId);
       setMembers(membersList);
@@ -54,17 +54,17 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       setLoading(false);
     }
   };
-  
+
   const handleToggleAdmin = async (member: GroupMember) => {
     if (!user) return;
-    
+
     // Don't allow changing role of the owner
     if (member.user_id === ownerId) {
       return;
     }
-    
+
     try {
-      const makeAdmin = member.role !== 'admin';
+      const makeAdmin = member.role !== "admin";
       await updateMemberRole(member.id, makeAdmin);
       await loadMembers();
     } catch (err) {
@@ -72,21 +72,27 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       setError("Failed to update member role");
     }
   };
-  
+
   const handleRemoveMember = async (member: GroupMember) => {
     if (!user) return;
-    
+
     // Don't allow removing the owner
     if (member.user_id === ownerId) {
       setError("Cannot remove the group owner");
       return;
     }
-    
+
     // Confirm before removing
-    if (!window.confirm(`Are you sure you want to remove ${member.user_email || member.user_id} from the group?`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to remove ${
+          member.user_email || member.user_id
+        } from the group?`
+      )
+    ) {
       return;
     }
-    
+
     try {
       await removeMember(member.id);
       await loadMembers();
@@ -95,7 +101,7 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       setError("Failed to remove member");
     }
   };
-  
+
   const isUserOwner = user?.id === ownerId;
 
   return (
@@ -129,18 +135,23 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                 <p className="text-red-200 text-sm">{error}</p>
               </div>
             )}
-            
+
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-light text-white">
                 {members.length} {members.length === 1 ? "Member" : "Members"}
               </h3>
-              {isUserOwner || members.some(m => m.user_id === user?.id && m.role === 'admin') ? (
+              {isUserOwner ||
+              members.some(
+                (m) => m.user_id === user?.id && m.role === "admin"
+              ) ? (
                 <button
                   onClick={onInviteClick}
                   className="flex items-center space-x-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span className="text-sm font-light tracking-wider">INVITE USER</span>
+                  <span className="text-sm font-light tracking-wider">
+                    INVITE USER
+                  </span>
                 </button>
               ) : null}
             </div>
@@ -168,7 +179,11 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                     key: "display_name",
                     label: "NAME",
                     render: (member: GroupMember) => (
-                      <span>{member.display_name ?? member.user_email ?? member.user_id}</span>
+                      <span>
+                        {member.display_name ??
+                          member.user_email ??
+                          member.user_id}
+                      </span>
                     ),
                   },
                   {
@@ -181,7 +196,7 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                             <Shield className="w-4 h-4 mr-1" />
                             Owner
                           </span>
-                        ) : member.role === 'admin' ? (
+                        ) : member.role === "admin" ? (
                           <span className="text-blue-500 flex items-center">
                             <Shield className="w-4 h-4 mr-1" />
                             Admin
@@ -193,10 +208,24 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                     ),
                   },
                 ]}
-                onEdit={isUserOwner || (user && members.some(m => m.user_id === user.id && m.role === 'admin')) ? 
-                  (member) => handleToggleAdmin(member) : undefined}
-                onDelete={isUserOwner || (user && members.some(m => m.user_id === user.id && m.role === 'admin')) ? 
-                  (member) => handleRemoveMember(member) : undefined}
+                onEdit={
+                  isUserOwner ||
+                  (user &&
+                    members.some(
+                      (m) => m.user_id === user.id && m.role === "admin"
+                    ))
+                    ? (member) => handleToggleAdmin(member)
+                    : undefined
+                }
+                onDelete={
+                  isUserOwner ||
+                  (user &&
+                    members.some(
+                      (m) => m.user_id === user.id && m.role === "admin"
+                    ))
+                    ? (member) => handleRemoveMember(member)
+                    : undefined
+                }
                 defaultViewMode="table"
               />
             )}

@@ -48,9 +48,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, type, checked, value } = e.target;
     setFormData({
       ...formData,
@@ -89,7 +87,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({
                 <p className="text-red-200 text-sm">{error}</p>
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                 USER EMAIL
@@ -104,7 +102,8 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({
                 placeholder="user@example.com"
               />
               <p className="text-gray-500 text-xs mt-2">
-                The user must be registered in the system to receive the invitation.
+                The user must be registered in the system to receive the
+                invitation.
               </p>
             </div>
 
@@ -117,8 +116,8 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({
                 onChange={handleChange}
                 className="mr-2 bg-black border border-zinc-800"
               />
-              <label 
-                htmlFor="isAdmin" 
+              <label
+                htmlFor="isAdmin"
                 className="text-sm font-light tracking-wider text-gray-300"
               >
                 Grant admin permissions

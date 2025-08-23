@@ -1,5 +1,5 @@
+import { Save, User, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { X, Save, User } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
@@ -25,12 +25,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     accent_color: "#FFFFFF",
   });
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
     fetchProfile();
-    
+
     return () => {
       document.body.style.overflow = "unset";
     };
@@ -38,7 +41,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
 
   const fetchProfile = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -46,8 +49,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
         .select("*")
         .eq("id", user.id)
         .single();
-        
-      if (error && error.code !== 'PGRST116') {
+
+      if (error && error.code !== "PGRST116") {
         throw error;
       }
 
@@ -71,9 +74,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -81,10 +82,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setSaving(true);
     setMessage(null);
-    
+
     try {
       if (profile) {
         // Update existing profile
@@ -95,23 +96,21 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
             accent_color: formData.accent_color,
           })
           .eq("id", user.id);
-          
+
         if (error) throw error;
       } else {
         // Create new profile
-        const { error } = await supabase
-          .from("profiles")
-          .insert([
-            {
-              id: user.id,
-              display_name: formData.display_name,
-              accent_color: formData.accent_color,
-            },
-          ]);
-          
+        const { error } = await supabase.from("profiles").insert([
+          {
+            id: user.id,
+            display_name: formData.display_name,
+            accent_color: formData.accent_color,
+          },
+        ]);
+
         if (error) throw error;
       }
-      
+
       setMessage({ text: "Profile updated successfully", type: "success" });
       await fetchProfile(); // Refresh profile data
     } catch (error) {
@@ -149,19 +148,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
           </div>
 
           {loading ? (
-            <div className="p-6 text-center text-gray-400">Loading profile data...</div>
+            <div className="p-6 text-center text-gray-400">
+              Loading profile data...
+            </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {message && (
-                <div className={`p-3 text-sm mb-4 ${
-                  message.type === 'success' 
-                    ? 'bg-green-900/30 border border-green-800 text-green-300' 
-                    : 'bg-red-900/30 border border-red-800 text-red-300'
-                }`}>
+                <div
+                  className={`p-3 text-sm mb-4 ${
+                    message.type === "success"
+                      ? "bg-green-900/30 border border-green-800 text-green-300"
+                      : "bg-red-900/30 border border-red-800 text-red-300"
+                  }`}
+                >
                   {message.text}
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                   EMAIL
@@ -172,7 +175,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                   disabled
                   className="w-full bg-black border border-zinc-800 px-4 py-3 text-gray-500 font-light text-sm tracking-wide focus:outline-none transition-colors"
                 />
-                <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Email cannot be changed
+                </p>
               </div>
 
               <div>

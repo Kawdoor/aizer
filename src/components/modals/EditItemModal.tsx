@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
-import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 import { useToast } from "../toast/Toast";
+import { ModalAnimations } from "./ModalAnimations";
 
 interface Inventory {
   id: string;
@@ -83,7 +83,9 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
           error.code === "403" ||
           error.message?.includes("JWT")
         ) {
-          console.log("Authentication error detected, trying to refresh session...");
+          console.log(
+            "Authentication error detected, trying to refresh session..."
+          );
           const refreshed = await refreshSession();
 
           if (refreshed) {
@@ -123,7 +125,12 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
       }
 
       onItemUpdated();
-  try { push({ message: `Artículo "${formData.name}" actualizado.`, type: 'success' }); } catch {}
+      try {
+        push({
+          message: `Artículo "${formData.name}" actualizado.`,
+          type: "success",
+        });
+      } catch {}
     } catch (error) {
       console.error("Error updating item:", error);
     } finally {

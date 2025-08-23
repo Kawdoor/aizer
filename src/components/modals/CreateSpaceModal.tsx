@@ -1,9 +1,9 @@
 import { AlertTriangle, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
-import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 import { useToast } from "../toast/Toast";
+import { ModalAnimations } from "./ModalAnimations";
 
 interface Space {
   id: string;
@@ -36,7 +36,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       document.body.style.overflow = "unset";
     };
   }, []);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -48,13 +48,13 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     setLoading(true);
     setErrorMessage(null);
     if (!groupId) {
-      setErrorMessage('Selecciona un grupo antes de crear un espacio.');
+      setErrorMessage("Selecciona un grupo antes de crear un espacio.");
       setLoading(false);
       return;
     }
     try {
       const { data: created, error } = await supabase
-        .from('spaces')
+        .from("spaces")
         .insert([
           {
             group_id: groupId,
@@ -67,34 +67,43 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         .single();
 
       if (!error && created) {
-        console.log('Space created:', created);
-        push({ message: `Espacio "${created.name}" creado.`, type: 'success' });
+        console.log("Space created:", created);
+        push({ message: `Espacio "${created.name}" creado.`, type: "success" });
         onSpaceCreated();
         return;
       }
 
       if (error) {
         // RLS error: inform user/admin
-        if (error.code === '42501' || error.message?.includes('row-level security')) {
-          const msg = 'No tienes permisos para crear espacios en este grupo (RLS). Pide al administrador que revise las políticas.';
+        if (
+          error.code === "42501" ||
+          error.message?.includes("row-level security")
+        ) {
+          const msg =
+            "No tienes permisos para crear espacios en este grupo (RLS). Pide al administrador que revise las políticas.";
           setErrorMessage(msg);
-          push({ message: msg, type: 'error' });
-          console.error('RLS error creating space:', error);
+          push({ message: msg, type: "error" });
+          console.error("RLS error creating space:", error);
           throw error;
         }
 
         // Try refresh for auth-related errors once
-        if (error.code === '401' || error.code === '403' || error.message?.includes('JWT')) {
+        if (
+          error.code === "401" ||
+          error.code === "403" ||
+          error.message?.includes("JWT")
+        ) {
           const refreshed = await refreshSession();
           if (!refreshed) {
-            const msg = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
+            const msg =
+              "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
             setErrorMessage(msg);
-            push({ message: msg, type: 'error' });
-            throw new Error('Session refresh failed');
+            push({ message: msg, type: "error" });
+            throw new Error("Session refresh failed");
           }
 
           const { data: createdRetry, error: retryErr } = await supabase
-            .from('spaces')
+            .from("spaces")
             .insert([
               {
                 group_id: groupId,
@@ -108,27 +117,34 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
 
           if (retryErr) {
             // If still error after refresh, show message
-            const msg = 'No se pudo crear el espacio después de refrescar la sesión.';
+            const msg =
+              "No se pudo crear el espacio después de refrescar la sesión.";
             setErrorMessage(msg);
-            push({ message: msg, type: 'error' });
-            console.error('Retry error creating space:', retryErr);
+            push({ message: msg, type: "error" });
+            console.error("Retry error creating space:", retryErr);
             throw retryErr;
           }
 
           if (createdRetry) {
-            push({ message: `Espacio "${createdRetry.name}" creado.`, type: 'success' });
+            push({
+              message: `Espacio "${createdRetry.name}" creado.`,
+              type: "success",
+            });
             onSpaceCreated();
             return;
           }
         }
 
         // Fallback: generic error
-        setErrorMessage('Error al crear el espacio: ' + (error.message || JSON.stringify(error)));
-        push({ message: 'Error al crear el espacio', type: 'error' });
+        setErrorMessage(
+          "Error al crear el espacio: " +
+            (error.message || JSON.stringify(error))
+        );
+        push({ message: "Error al crear el espacio", type: "error" });
         throw error;
       }
     } catch (err) {
-      console.error('Error creating space:', err);
+      console.error("Error creating space:", err);
     } finally {
       setLoading(false);
     }
@@ -174,7 +190,7 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 <div className="text-sm text-red-300">{errorMessage}</div>
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                 NAME

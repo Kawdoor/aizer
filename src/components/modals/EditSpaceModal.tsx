@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
-import { ModalAnimations } from "./ModalAnimations";
 import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 import { useToast } from "../toast/Toast";
+import { ModalAnimations } from "./ModalAnimations";
 
 interface Space {
   id: string;
@@ -48,7 +48,7 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
     setLoading(true);
     setErrorMessage(null);
 
-  // (availableParentSpaces is computed below for the select)
+    // (availableParentSpaces is computed below for the select)
 
     try {
       const { error } = await supabase
@@ -62,10 +62,16 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
 
       if (error) {
         // Check if it's an authentication error (401, 403)
-        if (error.code === '401' || error.code === '403' || error.message?.includes('JWT')) {
-          console.log("Authentication error detected, trying to refresh session...");
+        if (
+          error.code === "401" ||
+          error.code === "403" ||
+          error.message?.includes("JWT")
+        ) {
+          console.log(
+            "Authentication error detected, trying to refresh session..."
+          );
           const refreshed = await refreshSession();
-          
+
           if (refreshed) {
             // Try again with refreshed session
             const { error: retryError } = await supabase
@@ -76,27 +82,36 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
                 parent_id: formData.parent_id || null,
               })
               .eq("id", space.id);
-            
+
             if (retryError) {
-              setErrorMessage("No se pudo actualizar el espacio después de refrescar la sesión. Por favor, inicia sesión nuevamente.");
+              setErrorMessage(
+                "No se pudo actualizar el espacio después de refrescar la sesión. Por favor, inicia sesión nuevamente."
+              );
               throw retryError;
             }
-            
+
             onSpaceUpdated();
             return;
           } else {
             // Couldn't refresh, need to re-login
-            setErrorMessage("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+            setErrorMessage(
+              "Tu sesión ha expirado. Por favor, inicia sesión nuevamente."
+            );
             throw new Error("Session refresh failed");
           }
         }
-        
+
         setErrorMessage("Error al actualizar el espacio: " + error.message);
         throw error;
       }
-      
-  onSpaceUpdated();
-  try { push({ message: `Espacio "${formData.name}" actualizado.`, type: 'success' }); } catch {}
+
+      onSpaceUpdated();
+      try {
+        push({
+          message: `Espacio "${formData.name}" actualizado.`,
+          type: "success",
+        });
+      } catch {}
     } catch (error) {
       console.error("Error updating space:", error);
     } finally {
@@ -146,7 +161,7 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
                 <div className="text-sm text-red-300">{errorMessage}</div>
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                 NAME

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { AuthError, Session, User } from "@supabase/supabase-js";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 interface AuthContextType {
   user: User | null;
@@ -19,7 +19,9 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,13 +31,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Try to refresh the session
       const { data, error } = await supabase.auth.refreshSession();
-      
+
       if (error) {
         console.error("Error refreshing session:", error);
         setAuthError(error);
         return false;
       }
-      
+
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setAuthError(null);
@@ -65,13 +67,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Auth state changed:", event);
       setSession(session);
       setUser(session?.user ?? null);
-      
-      if (event === 'TOKEN_REFRESHED') {
+
+      if (event === "TOKEN_REFRESHED") {
         console.log("Token was refreshed successfully");
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === "SIGNED_OUT") {
         console.log("User signed out");
       }
-      
+
       setLoading(false);
     });
 

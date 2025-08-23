@@ -27,8 +27,8 @@ export default defineConfig({
         "**/package-lock.json",
         "**/yarn.lock",
         "**/Dashboard.old.tsx",
-        "**/Dashboard.new.tsx"
-      ]
+        "**/Dashboard.new.tsx",
+      ],
     },
   },
 });

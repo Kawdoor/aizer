@@ -1,5 +1,5 @@
 import { LogOut, Search, UserCircle, Users } from "lucide-react";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useGroups } from "../hooks/useGroups";
 import { supabase } from "../lib/supabase";
@@ -7,14 +7,14 @@ import CreateGroupModal from "./modals/CreateGroupModal";
 import CreateInventoryModal from "./modals/CreateInventoryModal";
 import CreateItemModal from "./modals/CreateItemModal";
 import CreateSpaceModal from "./modals/CreateSpaceModal";
-import EditSpaceModal from "./modals/EditSpaceModal";
+import DeleteConfirmationModal from "./modals/DeleteConfirmationModal";
 import EditInventoryModal from "./modals/EditInventoryModal";
 import EditItemModal from "./modals/EditItemModal";
-import ViewItemModal from "./modals/ViewItemModal";
-import DeleteConfirmationModal from "./modals/DeleteConfirmationModal";
-import ProfileModal from "./modals/ProfileModal";
+import EditSpaceModal from "./modals/EditSpaceModal";
 import GroupMembersModal from "./modals/GroupMembersModal";
 import InviteUserModal from "./modals/InviteUserModal";
+import ProfileModal from "./modals/ProfileModal";
+import ViewItemModal from "./modals/ViewItemModal";
 import NotificationsBell from "./PendingInvitations";
 import { TableView } from "./TableView";
 import { useToast } from "./toast/Toast";
@@ -51,14 +51,14 @@ interface Item {
 const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { push } = useToast();
-  const { 
-    groups, 
-    loading: groupsLoading, 
-    createGroup, 
-    fetchGroupMembers, 
+  const {
+    groups,
+    loading: groupsLoading,
+    createGroup,
+    fetchGroupMembers,
     inviteUserToGroup,
     updateMemberRole,
-    removeMemberFromGroup
+    removeMemberFromGroup,
   } = useGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -75,10 +75,20 @@ const Dashboard: React.FC = () => {
     spaces: [],
     inventories: [],
     items: [],
-    isSearching: false
+    isSearching: false,
   });
   const [activeModal, setActiveModal] = useState<
-    "space" | "inventory" | "item" | "group" | "editSpace" | "editInventory" | "editItem" | "profile" | "members" | "invite" | null
+    | "space"
+    | "inventory"
+    | "item"
+    | "group"
+    | "editSpace"
+    | "editInventory"
+    | "editItem"
+    | "profile"
+    | "members"
+    | "invite"
+    | null
   >(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
@@ -88,8 +98,10 @@ const Dashboard: React.FC = () => {
   );
   const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
   const [spaceToEdit, setSpaceToEdit] = useState<Space | null>(null);
-  const [inventoryToEdit, setInventoryToEdit] = useState<Inventory | null>(null);
-  
+  const [inventoryToEdit, setInventoryToEdit] = useState<Inventory | null>(
+    null
+  );
+
   // Estado para el modal de confirmación de eliminación
   const [deleteModalConfig, setDeleteModalConfig] = useState<{
     title: string;
@@ -150,7 +162,7 @@ const Dashboard: React.FC = () => {
       setSpaces(spacesData || []);
       setInventories(inventoriesData || []);
       setItems(itemsData || []);
-      
+
       // Reset search if active
       if (searchTerm) {
         handleSearch(searchTerm);
@@ -159,7 +171,7 @@ const Dashboard: React.FC = () => {
           spaces: [],
           inventories: [],
           items: [],
-          isSearching: false
+          isSearching: false,
         });
       }
     } catch (error) {
@@ -168,46 +180,52 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleSearch = (term: string) => {
     if (!term.trim()) {
       setSearchResults({
         spaces: [],
         inventories: [],
         items: [],
-        isSearching: false
+        isSearching: false,
       });
       return;
     }
-    
+
     const searchTermLower = term.toLowerCase();
-    
+
     // Search in spaces
-    const filteredSpaces = spaces.filter(space => 
-      space.name.toLowerCase().includes(searchTermLower) || 
-      (space.description && space.description.toLowerCase().includes(searchTermLower))
+    const filteredSpaces = spaces.filter(
+      (space) =>
+        space.name.toLowerCase().includes(searchTermLower) ||
+        (space.description &&
+          space.description.toLowerCase().includes(searchTermLower))
     );
-    
+
     // Search in inventories
-    const filteredInventories = inventories.filter(inventory => 
-      inventory.name.toLowerCase().includes(searchTermLower) || 
-      (inventory.description && inventory.description.toLowerCase().includes(searchTermLower))
+    const filteredInventories = inventories.filter(
+      (inventory) =>
+        inventory.name.toLowerCase().includes(searchTermLower) ||
+        (inventory.description &&
+          inventory.description.toLowerCase().includes(searchTermLower))
     );
-    
+
     // Search in items
-    const filteredItems = items.filter(item => 
-      item.name.toLowerCase().includes(searchTermLower) || 
-      (item.description && item.description.toLowerCase().includes(searchTermLower)) ||
-      (item.color && item.color.toLowerCase().includes(searchTermLower)) ||
-      (item.price && item.price.toString().includes(searchTermLower)) ||
-      (item.quantity && item.quantity.toString().includes(searchTermLower))
+    const filteredItems = items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(searchTermLower) ||
+        (item.description &&
+          item.description.toLowerCase().includes(searchTermLower)) ||
+        (item.color && item.color.toLowerCase().includes(searchTermLower)) ||
+        (item.price && item.price.toString().includes(searchTermLower)) ||
+        (item.quantity && item.quantity.toString().includes(searchTermLower))
     );
-    
+
     setSearchResults({
       spaces: filteredSpaces,
       inventories: filteredInventories,
       items: filteredItems,
-      isSearching: true
+      isSearching: true,
     });
   };
 
@@ -245,7 +263,7 @@ const Dashboard: React.FC = () => {
     setItemToEdit(item);
     setActiveModal("editItem");
   };
-  
+
   // Override setSelectedSpace to clear search results when selecting a space
   const handleSelectSpace = (space: Space) => {
     // Select or toggle off the selected space. The INVENTORIES section
@@ -263,39 +281,67 @@ const Dashboard: React.FC = () => {
         spaces: [],
         inventories: [],
         items: [],
-        isSearching: false
+        isSearching: false,
       });
     }
   };
 
   const deleteSpace = async (space: Space) => {
     try {
-      const { error } = await supabase.from("spaces").delete().eq("id", space.id);
+      const { error } = await supabase
+        .from("spaces")
+        .delete()
+        .eq("id", space.id);
       if (error) throw error;
       await fetchData();
       if (selectedSpace?.id === space.id) {
         setSelectedSpace(null);
       }
-  // toast success
-  try { push({ message: `Espacio "${space.name}" eliminado.`, type: 'success' }); } catch {}
+      // toast success
+      try {
+        push({
+          message: `Espacio "${space.name}" eliminado.`,
+          type: "success",
+        });
+      } catch {}
     } catch (error) {
       console.error("Error deleting space:", error);
-  try { push({ message: 'No se pudo eliminar el espacio. Es posible que contenga inventarios.', type: 'error' }); } catch {}
+      try {
+        push({
+          message:
+            "No se pudo eliminar el espacio. Es posible que contenga inventarios.",
+          type: "error",
+        });
+      } catch {}
     }
   };
 
   const deleteInventory = async (inventory: Inventory) => {
     try {
-      const { error } = await supabase.from("inventories").delete().eq("id", inventory.id);
+      const { error } = await supabase
+        .from("inventories")
+        .delete()
+        .eq("id", inventory.id);
       if (error) throw error;
       await fetchData();
       if (selectedInventory?.id === inventory.id) {
         setSelectedInventory(null);
       }
-  try { push({ message: `Inventario "${inventory.name}" eliminado.`, type: 'success' }); } catch {}
+      try {
+        push({
+          message: `Inventario "${inventory.name}" eliminado.`,
+          type: "success",
+        });
+      } catch {}
     } catch (error) {
       console.error("Error deleting inventory:", error);
-  try { push({ message: 'No se pudo eliminar el inventario. Es posible que contenga artículos.', type: 'error' }); } catch {}
+      try {
+        push({
+          message:
+            "No se pudo eliminar el inventario. Es posible que contenga artículos.",
+          type: "error",
+        });
+      } catch {}
     }
   };
 
@@ -304,37 +350,64 @@ const Dashboard: React.FC = () => {
       const { error } = await supabase.from("items").delete().eq("id", item.id);
       if (error) throw error;
       await fetchData();
-  try { push({ message: `Artículo "${item.name}" eliminado.`, type: 'success' }); } catch {}
+      try {
+        push({
+          message: `Artículo "${item.name}" eliminado.`,
+          type: "success",
+        });
+      } catch {}
     } catch (error) {
       console.error("Error deleting item:", error);
-  try { push({ message: 'No se pudo eliminar el artículo.', type: 'error' }); } catch {}
+      try {
+        push({ message: "No se pudo eliminar el artículo.", type: "error" });
+      } catch {}
     }
   };
 
   // --- Drag & Drop handlers ---
-  const handleMoveItemToInventory = async (targetInventoryId: string, payload: { id: string; type: string }) => {
+  const handleMoveItemToInventory = async (
+    targetInventoryId: string,
+    payload: { id: string; type: string }
+  ) => {
     // payload.id is the item id being moved
     try {
-      const { error } = await supabase.from('items').update({ inventory_id: targetInventoryId, parent_space_id: null }).eq('id', payload.id);
+      const { error } = await supabase
+        .from("items")
+        .update({ inventory_id: targetInventoryId, parent_space_id: null })
+        .eq("id", payload.id);
       if (error) throw error;
       await fetchData();
-      try { push({ message: 'Item moved.', type: 'success' }); } catch {}
+      try {
+        push({ message: "Item moved.", type: "success" });
+      } catch {}
     } catch (err) {
-      console.error('Error moving item:', err);
-      try { push({ message: 'No se pudo mover el artículo.', type: 'error' }); } catch {}
+      console.error("Error moving item:", err);
+      try {
+        push({ message: "No se pudo mover el artículo.", type: "error" });
+      } catch {}
     }
   };
 
-  const handleMoveItemToSpace = async (targetSpaceId: string, payload: { id: string; type: string }) => {
+  const handleMoveItemToSpace = async (
+    targetSpaceId: string,
+    payload: { id: string; type: string }
+  ) => {
     // Moving an item to a space will unassign its inventory (set inventory_id to null) and set parent_space_id
     try {
-      const { error } = await supabase.from('items').update({ inventory_id: null, parent_space_id: targetSpaceId }).eq('id', payload.id);
+      const { error } = await supabase
+        .from("items")
+        .update({ inventory_id: null, parent_space_id: targetSpaceId })
+        .eq("id", payload.id);
       if (error) throw error;
       await fetchData();
-      try { push({ message: 'Item moved to space.', type: 'success' }); } catch {}
+      try {
+        push({ message: "Item moved to space.", type: "success" });
+      } catch {}
     } catch (err) {
-      console.error('Error moving item to space:', err);
-      try { push({ message: 'No se pudo mover el artículo.', type: 'error' }); } catch {}
+      console.error("Error moving item to space:", err);
+      try {
+        push({ message: "No se pudo mover el artículo.", type: "error" });
+      } catch {}
     }
   };
 
@@ -343,7 +416,7 @@ const Dashboard: React.FC = () => {
       title: "Delete Space",
       message: `Are you sure you want to delete "${space.name}"? This action cannot be undone.`,
       onConfirm: () => deleteSpace(space),
-      isOpen: true
+      isOpen: true,
     });
   };
 
@@ -352,7 +425,7 @@ const Dashboard: React.FC = () => {
       title: "Delete Inventory",
       message: `Are you sure you want to delete "${inventory.name}"? This action cannot be undone.`,
       onConfirm: () => deleteInventory(inventory),
-      isOpen: true
+      isOpen: true,
     });
   };
 
@@ -361,7 +434,7 @@ const Dashboard: React.FC = () => {
       title: "Delete Item",
       message: `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
       onConfirm: () => deleteItem(item),
-      isOpen: true
+      isOpen: true,
     });
   };
 
@@ -421,7 +494,7 @@ const Dashboard: React.FC = () => {
                   </option>
                 ))}
               </select>
-              
+
               {selectedGroupId && (
                 <button
                   onClick={() => setActiveModal("members")}
@@ -450,13 +523,15 @@ const Dashboard: React.FC = () => {
             >
               <UserCircle className="w-5 h-5" />
             </button>
-            
+
             <button
               onClick={signOut}
               className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
             >
               <LogOut className="w-4 h-4" />
-              <span className="text-sm font-light tracking-wider">SIGN OUT</span>
+              <span className="text-sm font-light tracking-wider">
+                SIGN OUT
+              </span>
             </button>
           </div>
         </div>
@@ -464,11 +539,11 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-  {/* Pending invitations are now in the header notifications bell */}
-        
+        {/* Pending invitations are now in the header notifications bell */}
+
         {/* Controls */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0 mb-8">
-      <div className="relative w-full max-w-full">
+          <div className="relative w-full max-w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="text"
@@ -478,12 +553,15 @@ const Dashboard: React.FC = () => {
                 setSearchTerm(e.target.value);
                 handleSearch(e.target.value);
               }}
-        className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-full sm:w-96"
+              className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-full sm:w-96"
             />
           </div>
 
           <div className="flex items-center space-x-4 flex-wrap">
-            <CreateMenu selectedGroupId={selectedGroupId} onOpenModal={(t) => setActiveModal(t)} />
+            <CreateMenu
+              selectedGroupId={selectedGroupId}
+              onOpenModal={(t) => setActiveModal(t)}
+            />
           </div>
         </div>
 
@@ -496,14 +574,14 @@ const Dashboard: React.FC = () => {
                 <h2 className="text-xl font-light text-white tracking-wider">
                   SEARCH RESULTS FOR "{searchTerm}"
                 </h2>
-                <button 
+                <button
                   onClick={() => {
                     setSearchTerm("");
                     setSearchResults({
                       spaces: [],
                       inventories: [],
                       items: [],
-                      isSearching: false
+                      isSearching: false,
                     });
                   }}
                   className="text-sm text-gray-400 hover:text-white transition-colors"
@@ -511,14 +589,16 @@ const Dashboard: React.FC = () => {
                   CLEAR SEARCH
                 </button>
               </div>
-              
+
               {/* No results message */}
-              {!searchResults.spaces.length && !searchResults.inventories.length && !searchResults.items.length && (
-                <div className="text-gray-400 py-8 text-center">
-                  No results found for "{searchTerm}"
-                </div>
-              )}
-              
+              {!searchResults.spaces.length &&
+                !searchResults.inventories.length &&
+                !searchResults.items.length && (
+                  <div className="text-gray-400 py-8 text-center">
+                    No results found for "{searchTerm}"
+                  </div>
+                )}
+
               {/* Space search results */}
               {searchResults.spaces.length > 0 && (
                 <div className="mb-8">
@@ -541,9 +621,11 @@ const Dashboard: React.FC = () => {
                         label: "INVENTORIES",
                         render: (space) => (
                           <span>
-                            {inventories.filter(
-                              (inv) => inv.parent_space_id === space.id
-                            ).length}
+                            {
+                              inventories.filter(
+                                (inv) => inv.parent_space_id === space.id
+                              ).length
+                            }
                           </span>
                         ),
                       },
@@ -564,7 +646,7 @@ const Dashboard: React.FC = () => {
                   />
                 </div>
               )}
-              
+
               {/* Inventory search results */}
               {searchResults.inventories.length > 0 && (
                 <div className="mb-8">
@@ -600,7 +682,9 @@ const Dashboard: React.FC = () => {
                         label: "CREATED",
                         render: (inventory) => (
                           <span>
-                            {new Date(inventory.created_at).toLocaleDateString()}
+                            {new Date(
+                              inventory.created_at
+                            ).toLocaleDateString()}
                           </span>
                         ),
                       },
@@ -612,7 +696,7 @@ const Dashboard: React.FC = () => {
                   />
                 </div>
               )}
-              
+
               {/* Item search results */}
               {searchResults.items.length > 0 && (
                 <div className="mb-8">
@@ -660,9 +744,11 @@ const Dashboard: React.FC = () => {
                         key: "inventory",
                         label: "INVENTORY",
                         render: (item) => {
-                          const inv = inventories.find(i => i.id === item.inventory_id);
+                          const inv = inventories.find(
+                            (i) => i.id === item.inventory_id
+                          );
                           return inv ? inv.name : "-";
-                        }
+                        },
                       },
                       {
                         key: "created_at",
@@ -683,7 +769,7 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           )}
-          
+
           {/* Normal Content (when not searching) */}
 
           {/* Space List */}
@@ -711,9 +797,11 @@ const Dashboard: React.FC = () => {
                       label: "INVENTORIES",
                       render: (space) => (
                         <span>
-                          {inventories.filter(
-                            (inv) => inv.parent_space_id === space.id
-                          ).length}
+                          {
+                            inventories.filter(
+                              (inv) => inv.parent_space_id === space.id
+                            ).length
+                          }
                         </span>
                       ),
                     },
@@ -730,11 +818,13 @@ const Dashboard: React.FC = () => {
                   onEdit={handleEditSpace}
                   onDelete={handleDeleteSpace}
                   onSelect={handleSelectSpace}
-                  selectedItemId={selectedSpace ? (selectedSpace as Space).id : null}
+                  selectedItemId={
+                    selectedSpace ? (selectedSpace as Space).id : null
+                  }
                   defaultViewMode="grid"
                   dragType="space"
                   onDrop={async (target: any, payload) => {
-                    if (payload.type === 'item') {
+                    if (payload.type === "item") {
                       await handleMoveItemToSpace(target.id, payload);
                     }
                   }}
@@ -742,52 +832,71 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           )}
-          
+
           {/* Inventories List (shows under spaces, same style) */}
           {!searchResults.isSearching && selectedSpace && (
             <div className="mt-8">
               <h2 className="text-xl font-light text-white tracking-wider mb-4">
                 INVENTORIES
               </h2>
-              {(
-                selectedSpace ? inventories.filter(inv => inv.parent_space_id === selectedSpace.id) : inventories
+              {(selectedSpace
+                ? inventories.filter(
+                    (inv) => inv.parent_space_id === selectedSpace.id
+                  )
+                : inventories
               ).length === 0 ? (
                 <p className="text-gray-500">No inventories available</p>
               ) : (
                 <TableView
-                  data={selectedSpace ? inventories.filter(inv => inv.parent_space_id === selectedSpace.id) : inventories}
+                  data={
+                    selectedSpace
+                      ? inventories.filter(
+                          (inv) => inv.parent_space_id === selectedSpace.id
+                        )
+                      : inventories
+                  }
                   columns={[
-                    { key: 'name', label: 'NAME' },
-                    { key: 'description', label: 'DESCRIPTION' },
+                    { key: "name", label: "NAME" },
+                    { key: "description", label: "DESCRIPTION" },
                     {
-                      key: 'items',
-                      label: 'ITEMS',
+                      key: "items",
+                      label: "ITEMS",
                       render: (inventory: Inventory) => (
                         <span>
-                          {items.filter((item) => item.inventory_id === inventory.id).length}
+                          {
+                            items.filter(
+                              (item) => item.inventory_id === inventory.id
+                            ).length
+                          }
                         </span>
                       ),
                     },
                     {
-                      key: 'created_at',
-                      label: 'CREATED',
+                      key: "created_at",
+                      label: "CREATED",
                       render: (inventory: Inventory) => (
-                        <span>{new Date(inventory.created_at).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(inventory.created_at).toLocaleDateString()}
+                        </span>
                       ),
                     },
                   ]}
-                   onEdit={handleEditInventory}
-                   onDelete={handleDeleteInventory}
-                   onSelect={(inv: Inventory) => setSelectedInventory(inv)}
-                   selectedItemId={selectedInventory ? (selectedInventory as Inventory).id : null}
-                   defaultViewMode="grid"
-                   dragType="inventory"
-                   onDrop={async (target: any, payload) => {
-                     // if payload.type is 'item', move that item into this inventory
-                     if (payload.type === 'item') {
-                       await handleMoveItemToInventory(target.id, payload);
-                     }
-                   }}
+                  onEdit={handleEditInventory}
+                  onDelete={handleDeleteInventory}
+                  onSelect={(inv: Inventory) => setSelectedInventory(inv)}
+                  selectedItemId={
+                    selectedInventory
+                      ? (selectedInventory as Inventory).id
+                      : null
+                  }
+                  defaultViewMode="grid"
+                  dragType="inventory"
+                  onDrop={async (target: any, payload) => {
+                    // if payload.type is 'item', move that item into this inventory
+                    if (payload.type === "item") {
+                      await handleMoveItemToInventory(target.id, payload);
+                    }
+                  }}
                 />
               )}
             </div>
@@ -799,18 +908,50 @@ const Dashboard: React.FC = () => {
               <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
                 ITEMS IN {selectedInventory.name}
               </h3>
-              {items.filter(item => item.inventory_id === selectedInventory.id).length === 0 ? (
+              {items.filter(
+                (item) => item.inventory_id === selectedInventory.id
+              ).length === 0 ? (
                 <p className="text-gray-500">No items in this inventory</p>
               ) : (
                 <TableView
-                  data={items.filter(item => item.inventory_id === selectedInventory.id)}
+                  data={items.filter(
+                    (item) => item.inventory_id === selectedInventory.id
+                  )}
                   columns={[
-                    { key: 'name', label: 'NAME' },
-                    { key: 'quantity', label: 'QUANTITY' },
-                    { key: 'price', label: 'PRICE', render: (item: Item) => item.price ? `$${item.price.toFixed(2)}` : '-' },
-                    { key: 'description', label: 'DESCRIPTION' },
-                    { key: 'color', label: 'COLOR', render: (item: Item) => item.color ? (<div className="flex items-center space-x-2"><div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }}></div><span>{item.color}</span></div>) : '-' },
-                    { key: 'created_at', label: 'CREATED', render: (item: Item) => (<span>{new Date(item.created_at).toLocaleDateString()}</span>) },
+                    { key: "name", label: "NAME" },
+                    { key: "quantity", label: "QUANTITY" },
+                    {
+                      key: "price",
+                      label: "PRICE",
+                      render: (item: Item) =>
+                        item.price ? `$${item.price.toFixed(2)}` : "-",
+                    },
+                    { key: "description", label: "DESCRIPTION" },
+                    {
+                      key: "color",
+                      label: "COLOR",
+                      render: (item: Item) =>
+                        item.color ? (
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                            ></div>
+                            <span>{item.color}</span>
+                          </div>
+                        ) : (
+                          "-"
+                        ),
+                    },
+                    {
+                      key: "created_at",
+                      label: "CREATED",
+                      render: (item: Item) => (
+                        <span>
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </span>
+                      ),
+                    },
                   ]}
                   onEdit={handleEditItem}
                   onDelete={handleDeleteItem}
@@ -917,8 +1058,12 @@ const Dashboard: React.FC = () => {
         {activeModal === "members" && selectedGroupId && (
           <GroupMembersModal
             groupId={selectedGroupId}
-            groupName={groups.find(g => g.id === selectedGroupId)?.name || "Group"}
-            ownerId={groups.find(g => g.id === selectedGroupId)?.owner_id || ""}
+            groupName={
+              groups.find((g) => g.id === selectedGroupId)?.name || "Group"
+            }
+            ownerId={
+              groups.find((g) => g.id === selectedGroupId)?.owner_id || ""
+            }
             onClose={() => setActiveModal(null)}
             onInviteClick={() => setActiveModal("invite")}
             fetchMembers={fetchGroupMembers}
@@ -926,12 +1071,14 @@ const Dashboard: React.FC = () => {
             removeMember={removeMemberFromGroup}
           />
         )}
-        
+
         {/* Invite User Modal */}
         {activeModal === "invite" && selectedGroupId && (
           <InviteUserModal
             groupId={selectedGroupId}
-            groupName={groups.find(g => g.id === selectedGroupId)?.name || "Group"}
+            groupName={
+              groups.find((g) => g.id === selectedGroupId)?.name || "Group"
+            }
             onClose={() => setActiveModal("members")}
             onUserInvited={() => {
               // Return to members view
@@ -948,7 +1095,9 @@ const Dashboard: React.FC = () => {
           <DeleteConfirmationModal
             title={deleteModalConfig.title}
             message={deleteModalConfig.message}
-            onClose={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))}
+            onClose={() =>
+              setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }))
+            }
             onConfirm={deleteModalConfig.onConfirm}
           />
         )}
@@ -962,10 +1111,13 @@ export default Dashboard;
 // --- CreateMenu component ---
 type CreateMenuProps = {
   selectedGroupId: string;
-  onOpenModal: (type: 'space' | 'inventory' | 'item') => void;
+  onOpenModal: (type: "space" | "inventory" | "item") => void;
 };
 
-const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal }) => {
+const CreateMenu: React.FC<CreateMenuProps> = ({
+  selectedGroupId,
+  onOpenModal,
+}) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -974,12 +1126,12 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal })
       if (!ref.current) return;
       if (!ref.current.contains(e.target as Node)) setOpen(false);
     };
-    window.addEventListener('click', handler);
-    return () => window.removeEventListener('click', handler);
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
   }, []);
 
   return (
-      <div ref={ref} className="relative w-full sm:w-auto">
+    <div ref={ref} className="relative w-full sm:w-auto">
       <button
         onClick={() => setOpen((s) => !s)}
         className={`w-full sm:w-auto bg-zinc-900 border border-zinc-800 px-4 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors flex items-center justify-center`}
@@ -994,7 +1146,10 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal })
           <ul>
             <li>
               <button
-                onClick={() => { setOpen(false); onOpenModal('space'); }}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenModal("space");
+                }}
                 className="w-full text-left px-4 py-2 hover:bg-zinc-800"
                 disabled={!selectedGroupId}
               >
@@ -1003,7 +1158,10 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal })
             </li>
             <li>
               <button
-                onClick={() => { setOpen(false); onOpenModal('inventory'); }}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenModal("inventory");
+                }}
                 className="w-full text-left px-4 py-2 hover:bg-zinc-800"
                 disabled={!selectedGroupId}
               >
@@ -1012,7 +1170,10 @@ const CreateMenu: React.FC<CreateMenuProps> = ({ selectedGroupId, onOpenModal })
             </li>
             <li>
               <button
-                onClick={() => { setOpen(false); onOpenModal('item'); }}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenModal("item");
+                }}
                 className="w-full text-left px-4 py-2 hover:bg-zinc-800"
                 disabled={!selectedGroupId}
               >

@@ -1,5 +1,5 @@
 import { Edit, Grid, List, Trash } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 interface TableViewProps<T> {
   data: T[];
@@ -120,70 +120,77 @@ export const TableView = <T extends Record<string, any>>({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.map((item) => (
             <React.Fragment key={String(item[idField])}>
-            <div
-              onClick={() => onSelect && onSelect(item)}
-              draggable={!!dragType}
-              onDragStart={dragType ? (e) => handleDragStart(e, item) : undefined}
-              onDragOver={onDrop ? handleDragOver : undefined}
-              onDrop={onDrop ? (e) => handleDrop(e, item) : undefined}
-              className={`p-4 text-left border ${
-                selectedItemId === String(item[idField])
-                  ? "border-white bg-white text-black"
-                  : "border-zinc-800 hover:border-zinc-700"
-              } transition-colors relative group`}
-            >
-              {(onEdit || onDelete) && (
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex items-center space-x-1">
-                    {onEdit && (
-                      <button
-                        onClick={(e) =>
-                          handleActionClick(e, () => onEdit(item))
-                        }
-                        className="p-1 hover:bg-zinc-800 rounded"
-                      >
-                        <Edit className="w-4 h-4 text-gray-400 hover:text-white" />
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button
-                        onClick={(e) =>
-                          handleActionClick(e, () => onDelete(item))
-                        }
-                        className="p-1 hover:bg-zinc-800 rounded"
-                      >
-                        <Trash className="w-4 h-4 text-gray-400 hover:text-white" />
-                      </button>
-                    )}
+              <div
+                onClick={() => onSelect && onSelect(item)}
+                draggable={!!dragType}
+                onDragStart={
+                  dragType ? (e) => handleDragStart(e, item) : undefined
+                }
+                onDragOver={onDrop ? handleDragOver : undefined}
+                onDrop={onDrop ? (e) => handleDrop(e, item) : undefined}
+                className={`p-4 text-left border ${
+                  selectedItemId === String(item[idField])
+                    ? "border-white bg-white text-black"
+                    : "border-zinc-800 hover:border-zinc-700"
+                } transition-colors relative group`}
+              >
+                {(onEdit || onDelete) && (
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center space-x-1">
+                      {onEdit && (
+                        <button
+                          onClick={(e) =>
+                            handleActionClick(e, () => onEdit(item))
+                          }
+                          className="p-1 hover:bg-zinc-800 rounded"
+                        >
+                          <Edit className="w-4 h-4 text-gray-400 hover:text-white" />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          onClick={(e) =>
+                            handleActionClick(e, () => onDelete(item))
+                          }
+                          className="p-1 hover:bg-zinc-800 rounded"
+                        >
+                          <Trash className="w-4 h-4 text-gray-400 hover:text-white" />
+                        </button>
+                      )}
+                    </div>
                   </div>
+                )}
+                <div className="space-y-2">
+                  {columns.slice(0, 1).map((column) => (
+                    <div key={String(column.key)} className="font-light">
+                      {column.render
+                        ? column.render(item)
+                        : item[column.key as keyof T]}
+                    </div>
+                  ))}
+                  {columns.slice(1).map((column) => (
+                    <div
+                      key={String(column.key)}
+                      className="text-sm text-gray-500"
+                    >
+                      {column.render
+                        ? column.render(item)
+                        : item[column.key as keyof T]}
+                    </div>
+                  ))}
                 </div>
-              )}
-              <div className="space-y-2">
-                {columns.slice(0, 1).map((column) => (
-                  <div key={String(column.key)} className="font-light">
-                    {column.render
-                      ? column.render(item)
-                      : item[column.key as keyof T]}
-                  </div>
-                ))}
-                {columns.slice(1).map((column) => (
+              </div>
+              {/* render expanded content directly after the item when requested (grid mode) */}
+              {expandedIds &&
+                renderExpanded &&
+                expandedIds.includes(String(item[idField])) && (
                   <div
-                    key={String(column.key)}
-                    className="text-sm text-gray-500"
+                    key={`expanded-${String(item[idField])}`}
+                    className="col-span-full p-3 border-t border-zinc-800"
                   >
-                    {column.render
-                      ? column.render(item)
-                      : item[column.key as keyof T]}
+                    {renderExpanded(item)}
                   </div>
-                ))}
-              </div>
-            </div>
-            {/* render expanded content directly after the item when requested (grid mode) */}
-            {expandedIds && renderExpanded && expandedIds.includes(String(item[idField])) && (
-              <div key={`expanded-${String(item[idField])}`} className="col-span-full p-3 border-t border-zinc-800">
-                {renderExpanded(item)}
-              </div>
-            )}
+                )}
             </React.Fragment>
           ))}
         </div>
@@ -237,64 +244,75 @@ export const TableView = <T extends Record<string, any>>({
           <tbody className="divide-y divide-zinc-800">
             {data.map((item) => (
               <React.Fragment key={String(item[idField])}>
-              <tr
-                onClick={() => onSelect && onSelect(item)}
-                draggable={!!dragType}
-                onDragStart={dragType ? (e) => handleDragStart(e as any, item) : undefined}
-                onDragOver={onDrop ? handleDragOver : undefined}
-                onDrop={onDrop ? (e) => handleDrop(e as any, item) : undefined}
-                className={`cursor-pointer transition-colors ${
-                  selectedItemId === String(item[idField])
-                    ? "bg-white text-black"
-                    : "hover:bg-zinc-900/50"
-                }`}
-              >
-                {columns.map((column) => (
-                  <td
-                    key={String(column.key)}
-                    className="py-3 px-4 text-sm font-light"
-                  >
-                    {column.render
-                      ? column.render(item)
-                      : item[column.key as keyof T]}
-                  </td>
-                ))}
-                {(onEdit || onDelete) && (
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end space-x-2">
-                      {onEdit && (
-                        <button
-                          onClick={(e) =>
-                            handleActionClick(e, () => onEdit(item))
-                          }
-                          className="p-1 hover:bg-zinc-800 rounded"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4 text-gray-400 hover:text-white" />
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={(e) =>
-                            handleActionClick(e, () => onDelete(item))
-                          }
-                          className="p-1 hover:bg-zinc-800 rounded"
-                          title="Delete"
-                        >
-                          <Trash className="w-4 h-4 text-gray-400 hover:text-red-400" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                )}
-              </tr>
-              {expandedIds && renderExpanded && expandedIds.includes(String(item[idField])) && (
-                <tr className="bg-zinc-900">
-                  <td colSpan={columns.length + ((onEdit || onDelete) ? 1 : 0)} className="py-2 px-4">
-                    {renderExpanded(item)}
-                  </td>
+                <tr
+                  onClick={() => onSelect && onSelect(item)}
+                  draggable={!!dragType}
+                  onDragStart={
+                    dragType
+                      ? (e) => handleDragStart(e as any, item)
+                      : undefined
+                  }
+                  onDragOver={onDrop ? handleDragOver : undefined}
+                  onDrop={
+                    onDrop ? (e) => handleDrop(e as any, item) : undefined
+                  }
+                  className={`cursor-pointer transition-colors ${
+                    selectedItemId === String(item[idField])
+                      ? "bg-white text-black"
+                      : "hover:bg-zinc-900/50"
+                  }`}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={String(column.key)}
+                      className="py-3 px-4 text-sm font-light"
+                    >
+                      {column.render
+                        ? column.render(item)
+                        : item[column.key as keyof T]}
+                    </td>
+                  ))}
+                  {(onEdit || onDelete) && (
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex justify-end space-x-2">
+                        {onEdit && (
+                          <button
+                            onClick={(e) =>
+                              handleActionClick(e, () => onEdit(item))
+                            }
+                            className="p-1 hover:bg-zinc-800 rounded"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4 text-gray-400 hover:text-white" />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={(e) =>
+                              handleActionClick(e, () => onDelete(item))
+                            }
+                            className="p-1 hover:bg-zinc-800 rounded"
+                            title="Delete"
+                          >
+                            <Trash className="w-4 h-4 text-gray-400 hover:text-red-400" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
-              )}
+                {expandedIds &&
+                  renderExpanded &&
+                  expandedIds.includes(String(item[idField])) && (
+                    <tr className="bg-zinc-900">
+                      <td
+                        colSpan={columns.length + (onEdit || onDelete ? 1 : 0)}
+                        className="py-2 px-4"
+                      >
+                        {renderExpanded(item)}
+                      </td>
+                    </tr>
+                  )}
               </React.Fragment>
             ))}
           </tbody>

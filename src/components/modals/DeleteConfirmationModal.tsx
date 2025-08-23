@@ -1,4 +1,4 @@
-import { X, AlertTriangle } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import React from "react";
 import { ModalAnimations } from "./ModalAnimations";
 
@@ -61,7 +61,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                     onClose();
                   } catch (err) {
                     // keep modal open and log error
-                    console.error('Error in delete confirm:', err);
+                    console.error("Error in delete confirm:", err);
                   } finally {
                     setLoading(false);
                   }
@@ -69,7 +69,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 disabled={loading}
                 className="flex-1 bg-red-700 text-white py-3 font-light text-sm tracking-wider hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'DELETING...' : 'DELETE'}
+                {loading ? "DELETING..." : "DELETE"}
               </button>
             </div>
           </div>
