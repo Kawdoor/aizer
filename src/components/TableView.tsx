@@ -1,12 +1,12 @@
 import { Edit, Grid, List, Trash } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { Fragment, ReactNode, useEffect, useState } from "react";
 
 interface TableViewProps<T> {
   data: T[];
   columns: {
     key: keyof T | string;
     label: string;
-    render?: (item: T) => React.ReactNode;
+  render?: (item: T) => ReactNode;
   }[];
   onEdit?: (item: T) => void;
   onDelete?: (item: T) => void;
@@ -15,7 +15,7 @@ interface TableViewProps<T> {
   defaultViewMode?: "grid" | "table";
   selectedItemId?: string | null;
   expandedIds?: string[];
-  renderExpanded?: (item: T) => React.ReactNode;
+  renderExpanded?: (item: T) => ReactNode;
   // Optional drag/drop handlers. If `dragType` is provided, rows/cards become draggable and
   // will set a dataTransfer payload of { id, type } where id is the idField value.
   dragType?: string;
@@ -119,7 +119,7 @@ export const TableView = <T extends Record<string, any>>({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.map((item) => (
-            <React.Fragment key={String(item[idField])}>
+            <Fragment key={String(item[idField])}>
               <div
                 onClick={() => onSelect && onSelect(item)}
                 draggable={!!dragType}
@@ -191,7 +191,7 @@ export const TableView = <T extends Record<string, any>>({
                     {renderExpanded(item)}
                   </div>
                 )}
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
       </div>
@@ -243,7 +243,7 @@ export const TableView = <T extends Record<string, any>>({
           </thead>
           <tbody className="divide-y divide-zinc-800">
             {data.map((item) => (
-              <React.Fragment key={String(item[idField])}>
+              <Fragment key={String(item[idField])}>
                 <tr
                   onClick={() => onSelect && onSelect(item)}
                   draggable={!!dragType}
@@ -313,7 +313,7 @@ export const TableView = <T extends Record<string, any>>({
                       </td>
                     </tr>
                   )}
-              </React.Fragment>
+              </Fragment>
             ))}
           </tbody>
         </table>
