@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './components/toast/Toast';
