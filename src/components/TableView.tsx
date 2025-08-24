@@ -54,9 +54,9 @@ export const TableView = <T extends Record<string, any>>({
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Animation mount effect
+  // Animation mount effect - faster and smoother for mobile
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 50);
+    const timer = setTimeout(() => setMounted(true), 25);
     return () => {
       clearTimeout(timer);
       setMounted(false);
@@ -207,10 +207,10 @@ export const TableView = <T extends Record<string, any>>({
                 } ${
                   mounted
                     ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4"
-                } transition-all duration-500 ease-out`}
+                    : "opacity-0 translate-y-1 sm:translate-y-4"
+                } transition-all duration-300 sm:duration-500 ease-out`}
                 style={{
-                  transitionDelay: `${idx * 100}ms`,
+                  transitionDelay: `${idx * 50}ms`,
                 }}
               >
                 {(onEdit || onDelete) && (
@@ -359,10 +359,10 @@ export const TableView = <T extends Record<string, any>>({
                   } ${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-2"
-                  } transition-all duration-500 ease-out`}
+                      : "opacity-0 translate-y-1 sm:translate-y-2"
+                  } transition-all duration-250 sm:duration-500 ease-out`}
                   style={{
-                    transitionDelay: `${idx * 80}ms`,
+                    transitionDelay: `${idx * 40}ms`,
                   }}
                 >
                   {columns.map((column) => (

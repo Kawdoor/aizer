@@ -153,9 +153,9 @@ const Dashboard: React.FC = () => {
       fetchData();
     }
 
-    // trigger mount animation when selected group or data changes with smoother timing
+    // trigger mount animation when selected group or data changes with smoother timing for mobile
     setMounted(false);
-    const timer = setTimeout(() => setMounted(true), 100);
+    const timer = setTimeout(() => setMounted(true), 50);
     return () => {
       clearTimeout(timer);
       setMounted(false);
@@ -202,8 +202,8 @@ const Dashboard: React.FC = () => {
       setSpaces(spacesData || []);
       setInventories(inventoriesData || []);
       setItems(itemsData || []);
-      // trigger enter animation after data set with better timing
-      setTimeout(() => setMounted(true), 150);
+      // trigger enter animation after data set with better timing for mobile
+      setTimeout(() => setMounted(true), 75);
       console.log(
         "Dashboard.fetchData: fetched",
         (spacesData || []).length,
@@ -739,8 +739,8 @@ const Dashboard: React.FC = () => {
       {/* Main Content */}
       <div
         className={`max-w-7xl mx-auto px-4 sm:px-6 py-2 ${
-          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        } transition-all duration-700 ease-out`}
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 sm:translate-y-4"
+        } transition-all duration-300 sm:duration-700 ease-out`}
       >
         {/* Pending invitations are now in the header notifications bell */}
 
@@ -761,8 +761,8 @@ const Dashboard: React.FC = () => {
               className={`${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              } transition-all duration-600 ease-out delay-100`}
+                  : "opacity-0 translate-y-1 sm:translate-y-6"
+              } transition-all duration-200 sm:duration-600 ease-out delay-50 sm:delay-100`}
             >
               <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6">
                 <h2 className="text-lg sm:text-xl font-light text-white tracking-wider">
@@ -797,8 +797,8 @@ const Dashboard: React.FC = () => {
                   className={`mb-8 ${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-6"
-                  } transition-all duration-600 ease-out delay-200`}
+                      : "opacity-0 translate-y-1 sm:translate-y-6"
+                  } transition-all duration-250 sm:duration-600 ease-out delay-75 sm:delay-200`}
                 >
                   <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider mb-4">
                     SPACES ({searchResults.spaces.length})
@@ -807,8 +807,8 @@ const Dashboard: React.FC = () => {
                     className={`${
                       mounted
                         ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-4"
-                    } transition-all duration-600 ease-out delay-100`}
+                        : "opacity-0 translate-y-1 sm:translate-y-4"
+                    } transition-all duration-200 sm:duration-600 ease-out delay-25 sm:delay-100`}
                   >
                     <TableView
                       data={searchResults.spaces}
@@ -859,8 +859,8 @@ const Dashboard: React.FC = () => {
                   className={`mb-8 ${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-6"
-                  } transition-all duration-600 ease-out delay-300`}
+                      : "opacity-0 translate-y-1 sm:translate-y-6"
+                  } transition-all duration-300 sm:duration-600 ease-out delay-100 sm:delay-300`}
                 >
                   <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider mb-4">
                     INVENTORIES ({searchResults.inventories.length})
@@ -869,8 +869,8 @@ const Dashboard: React.FC = () => {
                     className={`${
                       mounted
                         ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-4"
-                    } transition-all duration-600 ease-out delay-200`}
+                        : "opacity-0 translate-y-1 sm:translate-y-4"
+                    } transition-all duration-250 sm:duration-600 ease-out delay-50 sm:delay-200`}
                   >
                     <TableView
                       data={searchResults.inventories}
@@ -923,8 +923,8 @@ const Dashboard: React.FC = () => {
                   className={`mb-8 ${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-6"
-                  } transition-all duration-600 ease-out delay-400`}
+                      : "opacity-0 translate-y-1 sm:translate-y-6"
+                  } transition-all duration-350 sm:duration-600 ease-out delay-125 sm:delay-400`}
                 >
                   <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider mb-4">
                     ITEMS ({searchResults.items.length})
@@ -933,8 +933,8 @@ const Dashboard: React.FC = () => {
                     className={`${
                       mounted
                         ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-4"
-                    } transition-all duration-600 ease-out delay-300`}
+                        : "opacity-0 translate-y-1 sm:translate-y-4"
+                    } transition-all duration-300 sm:duration-600 ease-out delay-75 sm:delay-300`}
                   >
                     <TableView
                       data={searchResults.items}
@@ -1012,8 +1012,8 @@ const Dashboard: React.FC = () => {
               className={`${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              } transition-all duration-600 ease-out delay-100`}
+                  : "opacity-0 translate-y-1 sm:translate-y-6"
+              } transition-all duration-250 sm:duration-600 ease-out delay-50 sm:delay-100`}
             >
               <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
                 <h2 className="text-lg sm:text-xl font-light text-white tracking-wider">
@@ -1059,8 +1059,8 @@ const Dashboard: React.FC = () => {
                   className={`${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-4"
-                  } transition-all duration-600 ease-out delay-100`}
+                      : "opacity-0 translate-y-1 sm:translate-y-4"
+                  } transition-all duration-200 sm:duration-600 ease-out delay-25 sm:delay-100`}
                 >
                   <TableView
                     data={spaces}
@@ -1122,8 +1122,8 @@ const Dashboard: React.FC = () => {
               className={`mt-8 ${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              } transition-all duration-600 ease-out delay-200`}
+                  : "opacity-0 translate-y-1 sm:translate-y-6"
+              } transition-all duration-300 sm:duration-600 ease-out delay-75 sm:delay-200`}
             >
               <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
                 <h2 className="text-lg sm:text-xl font-light text-white tracking-wider">
@@ -1191,8 +1191,8 @@ const Dashboard: React.FC = () => {
                   className={`${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-4"
-                  } transition-all duration-600 ease-out delay-200`}
+                      : "opacity-0 translate-y-1 sm:translate-y-4"
+                  } transition-all duration-250 sm:duration-600 ease-out delay-50 sm:delay-200`}
                 >
                   <TableView
                     data={
@@ -1259,8 +1259,8 @@ const Dashboard: React.FC = () => {
               className={`mt-6 ${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              } transition-all duration-600 ease-out delay-300`}
+                  : "opacity-0 translate-y-1 sm:translate-y-6"
+              } transition-all duration-350 sm:duration-600 ease-out delay-100 sm:delay-300`}
             >
               <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
                 <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider">
@@ -1311,8 +1311,8 @@ const Dashboard: React.FC = () => {
                   className={`${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-4"
-                  } transition-all duration-600 ease-out delay-300`}
+                      : "opacity-0 translate-y-1 sm:translate-y-4"
+                  } transition-all duration-300 sm:duration-600 ease-out delay-75 sm:delay-300`}
                 >
                   <TableView
                     data={items.filter(
