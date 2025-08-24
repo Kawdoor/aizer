@@ -9,19 +9,16 @@ interface Space {
   id: string;
   name: string;
   description: string | null;
-  parent_id: string | null;
 }
 
 interface CreateSpaceModalProps {
   groupId: string;
-  spaces: Space[];
   onClose: () => void;
   onSpaceCreated: () => void;
 }
 
 const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   groupId,
-  spaces,
   onClose,
   onSpaceCreated,
 }) => {
@@ -40,7 +37,6 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    parent_id: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +56,6 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
             group_id: groupId,
             name: formData.name,
             description: formData.description || null,
-            parent_id: formData.parent_id || null,
           },
         ])
         .select()
@@ -109,7 +104,6 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 group_id: groupId,
                 name: formData.name,
                 description: formData.description || null,
-                parent_id: formData.parent_id || null,
               },
             ])
             .select()
@@ -167,11 +161,11 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
         <div
-          className="bg-zinc-900 border border-zinc-800 w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto modal-scroll"
+          className="bg-zinc-900 border border-zinc-800 w-full max-w-md pointer-events-auto modal-scroll flex flex-col max-h-[85vh]"
           style={{ animation: "slideUp 0.3s ease-out forwards" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex justify-between items-center p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900">
+          <div className="flex justify-between items-center p-6 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
             <h2 className="text-lg font-light tracking-wider text-white">
               CREATE SPACE
             </h2>
@@ -183,63 +177,48 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {errorMessage && (
-              <div className="bg-red-900/30 border border-red-800 p-4 mb-4 flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-300">{errorMessage}</div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              {errorMessage && (
+                <div className="bg-red-900/30 border border-red-800 p-4 mb-4 flex items-start space-x-3">
+                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-red-300">{errorMessage}</div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                  NAME
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
+                  placeholder="e.g. Living Room, Kitchen"
+                />
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                NAME
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
-                placeholder="e.g. Living Room, Kitchen"
-              />
+              <div>
+                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                  DESCRIPTION (OPTIONAL)
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors resize-none"
+                  placeholder="Describe this space"
+                />
+              </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                PARENT SPACE (OPTIONAL)
-              </label>
-              <select
-                name="parent_id"
-                value={formData.parent_id}
-                onChange={handleChange}
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide focus:outline-none focus:border-white transition-colors"
-              >
-                <option value="">No parent space</option>
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                DESCRIPTION (OPTIONAL)
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="Describe this space"
-              />
-            </div>
-
-            <div className="flex space-x-4 pt-4">
+          <div className="border-t border-zinc-800 p-6 bg-zinc-900 flex-shrink-0">
+            <form onSubmit={handleSubmit} className="flex space-x-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -254,8 +233,8 @@ const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
               >
                 {loading ? "CREATING..." : "CREATE SPACE"}
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
 

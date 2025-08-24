@@ -293,8 +293,6 @@ const Dashboard: React.FC = () => {
 
   const handleModalClose = () => {
     setActiveModal(null);
-    setCreateInventoryParent(null);
-    setCreateItemInventoryId(null);
   };
 
   const handleEntityCreated = async () => {
@@ -302,8 +300,6 @@ const Dashboard: React.FC = () => {
       "Dashboard.handleEntityCreated: refetching after entity change"
     );
     setActiveModal(null);
-    setCreateInventoryParent(null);
-    setCreateItemInventoryId(null);
     await fetchData();
   };
 
@@ -328,8 +324,10 @@ const Dashboard: React.FC = () => {
     // will show inventories for the selected space.
     if (selectedSpace?.id === space.id) {
       setSelectedSpace(null);
+      setSelectedInventory(null); // Clear inventory when deselecting space
     } else {
       setSelectedSpace(space);
+      setSelectedInventory(null); // Clear inventory when changing to different space
     }
 
     // Clear search when selecting a space
@@ -739,7 +737,9 @@ const Dashboard: React.FC = () => {
       {/* Main Content */}
       <div
         className={`max-w-7xl mx-auto px-4 sm:px-6 py-2 ${
-          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 sm:translate-y-4"
+          mounted
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-2 sm:translate-y-4"
         } transition-all duration-300 sm:duration-700 ease-out`}
       >
         {/* Pending invitations are now in the header notifications bell */}
@@ -1373,7 +1373,6 @@ const Dashboard: React.FC = () => {
         {activeModal === "space" && (
           <CreateSpaceModal
             groupId={selectedGroupId}
-            spaces={spaces}
             onClose={handleModalClose}
             onSpaceCreated={handleEntityCreated}
           />
@@ -1382,21 +1381,20 @@ const Dashboard: React.FC = () => {
         {activeModal === "inventory" && (
           <CreateInventoryModal
             groupId={selectedGroupId}
-            spaces={spaces}
-            inventories={inventories}
+            selectedSpaceId={selectedSpace?.id ?? null}
+            selectedSpaceName={selectedSpace?.name ?? null}
             onClose={handleModalClose}
             onInventoryCreated={handleEntityCreated}
-            initialParent={createInventoryParent ?? undefined}
           />
         )}
 
         {activeModal === "item" && (
           <CreateItemModal
             groupId={selectedGroupId}
-            inventories={inventories}
+            selectedInventoryId={selectedInventory?.id ?? null}
+            selectedInventoryName={selectedInventory?.name ?? null}
             onClose={handleModalClose}
             onItemCreated={handleEntityCreated}
-            initialInventoryId={createItemInventoryId ?? undefined}
           />
         )}
 

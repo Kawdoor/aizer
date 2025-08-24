@@ -1,29 +1,30 @@
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
 
-interface Inventory {
-  id: string;
-  name: string;
-}
-
 interface CreateItemModalProps {
   groupId: string;
-  inventories: Inventory[];
+  selectedInventoryId?: string | null;
+  selectedInventoryName?: string | null;
   onClose: () => void;
   onItemCreated: () => void;
-  initialInventoryId?: string | null;
 }
 
 const CreateItemModal: React.FC<CreateItemModalProps> = ({
   groupId,
-  inventories,
+  selectedInventoryId,
+  selectedInventoryName,
   onClose,
   onItemCreated,
-  initialInventoryId = null,
 }) => {
+  const { refreshSession } = useAuth();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -31,57 +32,72 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
       document.body.style.overflow = "unset";
     };
   }, []);
-  const [formData, setFormData] = useState({
-    name: "",
-    inventory_id: "",
-    quantity: 1,
-    description: "",
-    color: "",
-    price: "",
-  });
-
-  useEffect(() => {
-    if (initialInventoryId) {
-      setFormData((f) => ({ ...f, inventory_id: initialInventoryId }));
-    }
-  }, [initialInventoryId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    if (!groupId) {
+      setError("No group selected. Please select a group first.");
+      return;
+    }
+    if (!selectedInventoryId) {
+      setError(
+        "No inventory selected. Please select an inventory before creating item."
+      );
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const { error } = await supabase.from("items").insert([
-        {
-          group_id: groupId,
-          inventory_id: formData.inventory_id,
-          name: formData.name,
-          quantity: formData.quantity,
-          description: formData.description || null,
-          color: formData.color || null,
-          price: formData.price ? parseFloat(formData.price) : null,
-        },
-      ]);
+      const payload = {
+        name: name.trim(),
+        description: description.trim() || null,
+        quantity: quantity ? parseInt(quantity) : 1,
+        inventory_id: selectedInventoryId,
+        group_id: groupId,
+      };
 
-      if (error) throw error;
+      console.log("Creating item with payload:", payload);
+
+      const { data, error: createError } = await supabase
+        .from("items")
+        .insert([payload])
+        .select();
+
+      if (createError) {
+        console.error("Supabase error creating item:", createError);
+
+        if (createError.code === "42501") {
+          setError("You don't have permission to create items in this group.");
+        } else if (createError.message?.includes("Failed to fetch")) {
+          try {
+            await refreshSession();
+            const { error: retryError } = await supabase
+              .from("items")
+              .insert([payload])
+              .select();
+
+            if (retryError) throw retryError;
+          } catch (retryErr) {
+            setError("Failed to create item after session refresh.");
+            return;
+          }
+        } else {
+          setError(createError.message || "Failed to create item.");
+        }
+        return;
+      }
+
+      console.log("Item created successfully:", data);
       onItemCreated();
-    } catch (error) {
-      console.error("Error creating item:", error);
+      onClose();
+    } catch (err) {
+      console.error("Error creating item:", err);
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "number" ? parseInt(value) || 0 : value,
-    });
   };
 
   return (
@@ -93,11 +109,11 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
         <div
-          className="bg-zinc-900 border border-zinc-800 w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto modal-scroll"
+          className="bg-zinc-900 border border-zinc-800 w-full max-w-md pointer-events-auto modal-scroll flex flex-col max-h-[85vh]"
           style={{ animation: "slideUp 0.3s ease-out forwards" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex justify-between items-center p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900">
+          <div className="flex justify-between items-center p-6 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
             <h2 className="text-lg font-light tracking-wider text-white">
               CREATE ITEM
             </h2>
@@ -109,104 +125,70 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                NAME
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
-                placeholder="e.g. Blue Shirt, Coffee Mug"
-              />
-            </div>
+          <div className="flex-1 overflow-y-auto">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {error && (
+                <div className="bg-red-900/30 border border-red-800 p-3 text-sm text-red-200">
+                  {error}
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                INVENTORY
-              </label>
-              <select
-                name="inventory_id"
-                value={formData.inventory_id}
-                onChange={handleChange}
-                required
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide focus:outline-none focus:border-white transition-colors"
-              >
-                <option value="">Select an inventory</option>
-                {inventories.map((inventory) => (
-                  <option key={inventory.id} value={inventory.id}>
-                    {inventory.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              {/* Show context */}
+              {selectedInventoryName && (
+                <div className="bg-zinc-800/50 p-3 border border-zinc-700">
+                  <p className="text-xs font-light tracking-wider text-gray-400 mb-1">
+                    CREATING ITEM IN:
+                  </p>
+                  <p className="text-sm text-white font-light">
+                    {selectedInventoryName}
+                  </p>
+                </div>
+              )}
 
-            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                  NAME
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
+                  placeholder="e.g. Red T-Shirt, Blue Mug"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
+                  DESCRIPTION (OPTIONAL)
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors resize-none"
+                  placeholder="Describe this item"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                   QUANTITY
                 </label>
                 <input
                   type="number"
-                  name="quantity"
-                  value={formData.quantity}
-                  onChange={handleChange}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
                   min="1"
-                  required
-                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
+                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide focus:outline-none focus:border-white transition-colors"
                 />
               </div>
+            </form>
+          </div>
 
-              <div>
-                <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                  COLOR (OPTIONAL)
-                </label>
-                <input
-                  type="text"
-                  name="color"
-                  value={formData.color}
-                  onChange={handleChange}
-                  className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
-                  placeholder="e.g. Blue, Red"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                PRICE (OPTIONAL)
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                step="0.01"
-                min="0"
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
-                DESCRIPTION (OPTIONAL)
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-                className="w-full bg-black border border-zinc-800 px-4 py-3 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="Describe this item"
-              />
-            </div>
-
-            <div className="flex space-x-4 pt-4">
+          <div className="border-t border-zinc-800 p-6 bg-zinc-900 flex-shrink-0">
+            <form onSubmit={handleSubmit} className="flex space-x-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -216,13 +198,13 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !name.trim() || !selectedInventoryId}
                 className="flex-1 bg-white text-black py-3 font-light text-sm tracking-wider hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "CREATING..." : "CREATE ITEM"}
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
 
