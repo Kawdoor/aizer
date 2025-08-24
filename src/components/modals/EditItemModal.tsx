@@ -123,8 +123,8 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
         throw error;
       }
 
-  console.log("EditItemModal: update succeeded", updatedData);
-  onItemUpdated();
+      console.log("EditItemModal: update succeeded", updatedData);
+      onItemUpdated();
       try {
         push({
           message: `Artículo "${formData.name}" actualizado.`,

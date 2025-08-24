@@ -1,9 +1,9 @@
 import { Shield, UserPlus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { GroupMember } from "../../hooks/useGroups";
 import { TableView } from "../TableView";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { ModalAnimations } from "./ModalAnimations";
 
 interface GroupMembersModalProps {
@@ -15,7 +15,10 @@ interface GroupMembersModalProps {
   fetchMembers: (groupId: string) => Promise<GroupMember[]>;
   updateMemberRole: (memberId: string, isAdmin: boolean) => Promise<any>;
   removeMember: (memberId: string) => Promise<boolean>;
-  updateGroup: (groupId: string, data: { name?: string; description?: string | null }) => Promise<any>;
+  updateGroup: (
+    groupId: string,
+    data: { name?: string; description?: string | null }
+  ) => Promise<any>;
   deleteGroup: (groupId: string) => Promise<boolean>;
 }
 
@@ -36,7 +39,9 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(groupName);
-  const [editingDescription, setEditingDescription] = useState<string | null>(null);
+  const [editingDescription, setEditingDescription] = useState<string | null>(
+    null
+  );
   const [groupSaving, setGroupSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -145,7 +150,9 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                 <h4 className="text-sm text-gray-400 mb-2">GROUP SETTINGS</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Name</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Name
+                    </label>
                     <input
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
@@ -153,7 +160,9 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Description</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Description
+                    </label>
                     <input
                       value={editingDescription ?? ""}
                       onChange={(e) => setEditingDescription(e.target.value)}
@@ -172,18 +181,23 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                           });
                           await loadMembers();
                         } catch (err) {
-                            // Surface richer error info from the API/network
-                            try {
-                              console.error("Error updating group:", {
-                                message: (err as any)?.message,
-                                details: (err as any)?.details,
-                                code: (err as any)?.code,
-                                stack: (err as any)?.stack,
-                              });
-                            } catch (e) {
-                              console.error("Error updating group (fallback):", err);
-                            }
-                            setError("Failed to save group (see console for details)");
+                          // Surface richer error info from the API/network
+                          try {
+                            console.error("Error updating group:", {
+                              message: (err as any)?.message,
+                              details: (err as any)?.details,
+                              code: (err as any)?.code,
+                              stack: (err as any)?.stack,
+                            });
+                          } catch (e) {
+                            console.error(
+                              "Error updating group (fallback):",
+                              err
+                            );
+                          }
+                          setError(
+                            "Failed to save group (see console for details)"
+                          );
                         } finally {
                           setGroupSaving(false);
                         }

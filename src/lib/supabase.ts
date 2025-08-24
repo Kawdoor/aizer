@@ -24,7 +24,10 @@ if (
   console.error(
     "Supabase client appears to be using placeholder environment variables.\n" +
       "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment (or Vercel project settings).\n" +
-      `Current VITE_SUPABASE_URL=${supabaseUrl} VITE_SUPABASE_ANON_KEY=${supabaseAnonKey.slice(0,6)}...`
+      `Current VITE_SUPABASE_URL=${supabaseUrl} VITE_SUPABASE_ANON_KEY=${supabaseAnonKey.slice(
+        0,
+        6
+      )}...`
   );
 }
 

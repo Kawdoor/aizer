@@ -323,7 +323,10 @@ export const useGroups = () => {
 
   const deleteGroup = async (groupId: string) => {
     try {
-      const { error } = await supabase.from("groups").delete().eq("id", groupId);
+      const { error } = await supabase
+        .from("groups")
+        .delete()
+        .eq("id", groupId);
       if (error) throw error;
       await fetchGroups();
       return true;
@@ -386,8 +389,8 @@ export const useGroups = () => {
     inviteUserToGroup,
     updateMemberRole,
     removeMemberFromGroup,
-  updateGroup,
-  deleteGroup,
+    updateGroup,
+    deleteGroup,
     acceptInvitation,
     rejectInvitation,
     fetchPendingInvitations,

@@ -47,9 +47,8 @@ export const TableView = <T extends Record<string, any>>({
   const [viewModeState, setViewModeState] = useState<"grid" | "table">(
     defaultViewMode as "grid" | "table"
   );
-  const viewMode: "grid" | "table" = (controlledViewMode as
-    | "grid"
-    | "table") ?? viewModeState;
+  const viewMode: "grid" | "table" =
+    (controlledViewMode as "grid" | "table") ?? viewModeState;
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -143,7 +142,9 @@ export const TableView = <T extends Record<string, any>>({
                     else setViewModeState("grid");
                   }}
                   className={`p-1 ${
-                    viewMode === "grid" ? "bg-zinc-800 text-white" : "text-gray-500 hover:text-white"
+                    viewMode === "grid"
+                      ? "bg-zinc-800 text-white"
+                      : "text-gray-500 hover:text-white"
                   }`}
                 >
                   <Grid className="w-4 h-4" />
@@ -154,7 +155,9 @@ export const TableView = <T extends Record<string, any>>({
                     else setViewModeState("table");
                   }}
                   className={`p-1 ${
-                    viewMode === "table" ? "bg-zinc-800 text-white" : "text-gray-500 hover:text-white"
+                    viewMode === "table"
+                      ? "bg-zinc-800 text-white"
+                      : "text-gray-500 hover:text-white"
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -170,28 +173,48 @@ export const TableView = <T extends Record<string, any>>({
               <div
                 onClick={() => onSelect && onSelect(item)}
                 draggable={!!dragType}
-                onDragStart={dragType ? (e) => handleDragStart(e, item) : undefined}
+                onDragStart={
+                  dragType ? (e) => handleDragStart(e, item) : undefined
+                }
                 onDragEnd={dragType ? () => handleDragEnd() : undefined}
-                onDragOver={onDrop ? (e) => handleDragOverItem(e, item) : undefined}
+                onDragOver={
+                  onDrop ? (e) => handleDragOverItem(e, item) : undefined
+                }
                 onDrop={onDrop ? (e) => handleDrop(e, item) : undefined}
                 className={`p-4 text-left border ${
-                  selectedItemId === String(item[idField]) ? "border-white bg-white text-black" : "border-zinc-800 hover:border-zinc-700"
+                  selectedItemId === String(item[idField])
+                    ? "border-white bg-white text-black"
+                    : "border-zinc-800 hover:border-zinc-700"
                 } transition-transform duration-200 ease relative group ${
-                  draggingId === String(item[idField]) ? "opacity-60 scale-95" : ""
+                  draggingId === String(item[idField])
+                    ? "opacity-60 scale-95"
+                    : ""
                 } ${
-                  dragOverId === String(item[idField]) ? "ring-2 ring-white/20 scale-105" : ""
+                  dragOverId === String(item[idField])
+                    ? "ring-2 ring-white/20 scale-105"
+                    : ""
                 }`}
               >
                 {(onEdit || onDelete) && (
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex items-center space-x-1">
                       {onEdit && (
-                        <button onClick={(e) => handleActionClick(e, () => onEdit(item))} className="p-1 hover:bg-zinc-800 rounded">
+                        <button
+                          onClick={(e) =>
+                            handleActionClick(e, () => onEdit(item))
+                          }
+                          className="p-1 hover:bg-zinc-800 rounded"
+                        >
                           <Edit className="w-4 h-4 text-gray-400 hover:text-white" />
                         </button>
                       )}
                       {onDelete && (
-                        <button onClick={(e) => handleActionClick(e, () => onDelete(item))} className="p-1 hover:bg-zinc-800 rounded">
+                        <button
+                          onClick={(e) =>
+                            handleActionClick(e, () => onDelete(item))
+                          }
+                          className="p-1 hover:bg-zinc-800 rounded"
+                        >
                           <Trash className="w-4 h-4 text-gray-400 hover:text-white" />
                         </button>
                       )}
@@ -202,23 +225,35 @@ export const TableView = <T extends Record<string, any>>({
                 <div className="space-y-2">
                   {columns.slice(0, 1).map((column) => (
                     <div key={String(column.key)} className="font-light">
-                      {column.render ? column.render(item) : item[column.key as keyof T]}
+                      {column.render
+                        ? column.render(item)
+                        : item[column.key as keyof T]}
                     </div>
                   ))}
 
                   {columns.slice(1).map((column) => (
-                    <div key={String(column.key)} className="text-sm text-gray-500">
-                      {column.render ? column.render(item) : item[column.key as keyof T]}
+                    <div
+                      key={String(column.key)}
+                      className="text-sm text-gray-500"
+                    >
+                      {column.render
+                        ? column.render(item)
+                        : item[column.key as keyof T]}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {expandedIds && renderExpanded && expandedIds.includes(String(item[idField])) && (
-                <div key={`expanded-${String(item[idField])}`} className="col-span-full p-3 border-t border-zinc-800">
-                  {renderExpanded(item)}
-                </div>
-              )}
+              {expandedIds &&
+                renderExpanded &&
+                expandedIds.includes(String(item[idField])) && (
+                  <div
+                    key={`expanded-${String(item[idField])}`}
+                    className="col-span-full p-3 border-t border-zinc-800"
+                  >
+                    {renderExpanded(item)}
+                  </div>
+                )}
             </Fragment>
           ))}
         </div>
@@ -237,7 +272,11 @@ export const TableView = <T extends Record<string, any>>({
                   if (onViewModeChange) onViewModeChange("grid");
                   else setViewModeState("grid");
                 }}
-                className={`p-1 ${viewMode === "grid" ? "bg-zinc-800 text-white" : "text-gray-500 hover:text-white"}`}
+                className={`p-1 ${
+                  viewMode === "grid"
+                    ? "bg-zinc-800 text-white"
+                    : "text-gray-500 hover:text-white"
+                }`}
               >
                 <Grid className="w-4 h-4" />
               </button>
@@ -246,7 +285,11 @@ export const TableView = <T extends Record<string, any>>({
                   if (onViewModeChange) onViewModeChange("table");
                   else setViewModeState("table");
                 }}
-                className={`p-1 ${viewMode === "table" ? "bg-zinc-800 text-white" : "text-gray-500 hover:text-white"}`}
+                className={`p-1 ${
+                  viewMode === "table"
+                    ? "bg-zinc-800 text-white"
+                    : "text-gray-500 hover:text-white"
+                }`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -260,11 +303,16 @@ export const TableView = <T extends Record<string, any>>({
           <thead className="bg-zinc-900">
             <tr>
               {columns.map((column) => (
-                <th key={String(column.key)} className="text-left py-2 px-4 font-light text-sm text-gray-300 tracking-wider">
+                <th
+                  key={String(column.key)}
+                  className="text-left py-2 px-4 font-light text-sm text-gray-300 tracking-wider"
+                >
                   {column.label}
                 </th>
               ))}
-              {(onEdit || onDelete) && <th className="text-right py-2 px-4 w-20">Actions</th>}
+              {(onEdit || onDelete) && (
+                <th className="text-right py-2 px-4 w-20">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
@@ -273,14 +321,33 @@ export const TableView = <T extends Record<string, any>>({
                 <tr
                   onClick={() => onSelect && onSelect(item)}
                   draggable={!!dragType}
-                  onDragStart={dragType ? (e) => handleDragStart(e as any, item) : undefined}
-                  onDragOver={onDrop ? (e) => handleDragOverItem(e as any, item) : undefined}
-                  onDrop={onDrop ? (e) => handleDrop(e as any, item) : undefined}
-                  className={`cursor-pointer transition-colors ${selectedItemId === String(item[idField]) ? "bg-white text-black" : "hover:bg-zinc-900/50"}`}
+                  onDragStart={
+                    dragType
+                      ? (e) => handleDragStart(e as any, item)
+                      : undefined
+                  }
+                  onDragOver={
+                    onDrop
+                      ? (e) => handleDragOverItem(e as any, item)
+                      : undefined
+                  }
+                  onDrop={
+                    onDrop ? (e) => handleDrop(e as any, item) : undefined
+                  }
+                  className={`cursor-pointer transition-colors ${
+                    selectedItemId === String(item[idField])
+                      ? "bg-white text-black"
+                      : "hover:bg-zinc-900/50"
+                  }`}
                 >
                   {columns.map((column) => (
-                    <td key={String(column.key)} className="py-3 px-4 text-sm font-light">
-                      {column.render ? column.render(item) : item[column.key as keyof T]}
+                    <td
+                      key={String(column.key)}
+                      className="py-3 px-4 text-sm font-light"
+                    >
+                      {column.render
+                        ? column.render(item)
+                        : item[column.key as keyof T]}
                     </td>
                   ))}
 
@@ -288,12 +355,24 @@ export const TableView = <T extends Record<string, any>>({
                     <td className="py-3 px-4 text-right">
                       <div className="flex justify-end space-x-2">
                         {onEdit && (
-                          <button onClick={(e) => handleActionClick(e, () => onEdit(item))} className="p-1 hover:bg-zinc-800 rounded" title="Edit">
+                          <button
+                            onClick={(e) =>
+                              handleActionClick(e, () => onEdit(item))
+                            }
+                            className="p-1 hover:bg-zinc-800 rounded"
+                            title="Edit"
+                          >
                             <Edit className="w-4 h-4 text-gray-400 hover:text-white" />
                           </button>
                         )}
                         {onDelete && (
-                          <button onClick={(e) => handleActionClick(e, () => onDelete(item))} className="p-1 hover:bg-zinc-800 rounded" title="Delete">
+                          <button
+                            onClick={(e) =>
+                              handleActionClick(e, () => onDelete(item))
+                            }
+                            className="p-1 hover:bg-zinc-800 rounded"
+                            title="Delete"
+                          >
                             <Trash className="w-4 h-4 text-gray-400 hover:text-red-400" />
                           </button>
                         )}
@@ -302,20 +381,27 @@ export const TableView = <T extends Record<string, any>>({
                   )}
                 </tr>
 
-                {expandedIds && renderExpanded && expandedIds.includes(String(item[idField])) && (
-                  <tr className="bg-zinc-900">
-                    <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="py-2 px-4">
-                      {renderExpanded(item)}
-                    </td>
-                  </tr>
-                )}
+                {expandedIds &&
+                  renderExpanded &&
+                  expandedIds.includes(String(item[idField])) && (
+                    <tr className="bg-zinc-900">
+                      <td
+                        colSpan={columns.length + (onEdit || onDelete ? 1 : 0)}
+                        className="py-2 px-4"
+                      >
+                        {renderExpanded(item)}
+                      </td>
+                    </tr>
+                  )}
               </Fragment>
             ))}
           </tbody>
         </table>
       </div>
 
-      {data.length === 0 && <div className="py-8 text-center text-gray-500">No data available</div>}
+      {data.length === 0 && (
+        <div className="py-8 text-center text-gray-500">No data available</div>
+      )}
     </div>
   );
 };

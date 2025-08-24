@@ -64,7 +64,9 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
     e.preventDefault();
     setError(null);
     if (!groupId) {
-      setError("Missing group. Please select a group before creating an inventory.");
+      setError(
+        "Missing group. Please select a group before creating an inventory."
+      );
       return;
     }
     // Validate parent exists depending on parentType
@@ -104,7 +106,10 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
           error.code === "403" ||
           error.message?.includes("JWT")
         ) {
-          console.log("CreateInventoryModal: auth error, trying to refresh session...", error);
+          console.log(
+            "CreateInventoryModal: auth error, trying to refresh session...",
+            error
+          );
           const refreshed = await refreshSession();
           if (refreshed) {
             const { data: retryData, error: retryError } = await supabase
@@ -115,7 +120,9 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
                   name: formData.name,
                   description: formData.description || null,
                   parent_space_id:
-                    parentType === "space" ? formData.parent_space_id || null : null,
+                    parentType === "space"
+                      ? formData.parent_space_id || null
+                      : null,
                   parent_inventory_id:
                     parentType === "inventory"
                       ? formData.parent_inventory_id || null
@@ -125,18 +132,31 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
               .select();
 
             if (retryError) {
-              console.error("CreateInventoryModal: retry failed", retryError, retryData);
-              setError("No se pudo crear el inventario después de refrescar la sesión.");
+              console.error(
+                "CreateInventoryModal: retry failed",
+                retryError,
+                retryData
+              );
+              setError(
+                "No se pudo crear el inventario después de refrescar la sesión."
+              );
               throw retryError;
             }
 
-            console.log("CreateInventoryModal: created inventory after refresh", retryData);
+            console.log(
+              "CreateInventoryModal: created inventory after refresh",
+              retryData
+            );
             onInventoryCreated();
             return;
           }
         }
 
-        console.error("CreateInventoryModal: supabase insert error:", error, data);
+        console.error(
+          "CreateInventoryModal: supabase insert error:",
+          error,
+          data
+        );
         if (error.code === "42501") {
           setError(
             "Permisos insuficientes para crear inventarios (RLS). Revisa las políticas en Supabase o que tu usuario pertenezca al grupo."
