@@ -412,10 +412,13 @@ const Dashboard: React.FC = () => {
   ) => {
     // payload.id is the item id being moved
     try {
+      const upsertPayload = [
+        { id: payload.id, inventory_id: targetInventoryId, parent_space_id: null },
+      ];
+
       const { error } = await supabase
         .from("items")
-        .update({ inventory_id: targetInventoryId, parent_space_id: null })
-        .eq("id", payload.id);
+        .upsert(upsertPayload, { onConflict: "id" });
       if (error) throw error;
       await fetchData();
       try {
@@ -435,10 +438,13 @@ const Dashboard: React.FC = () => {
   ) => {
     // Moving an item to a space will unassign its inventory (set inventory_id to null) and set parent_space_id
     try {
+      const upsertPayload = [
+        { id: payload.id, inventory_id: null, parent_space_id: targetSpaceId },
+      ];
+
       const { error } = await supabase
         .from("items")
-        .update({ inventory_id: null, parent_space_id: targetSpaceId })
-        .eq("id", payload.id);
+        .upsert(upsertPayload, { onConflict: "id" });
       if (error) throw error;
       await fetchData();
       try {

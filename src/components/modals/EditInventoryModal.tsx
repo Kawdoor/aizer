@@ -69,15 +69,20 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
     }
 
     try {
-      const { error } = await supabase
-        .from("inventories")
-        .update({
+      // Use upsert to avoid PATCH (preflight) issues in some hosting/CORS setups.
+      const upsertPayload = [
+        {
+          id: inventory.id,
           name: formData.name,
           description: formData.description || null,
           parent_space_id: formData.parent_space_id || null,
           parent_inventory_id: formData.parent_inventory_id || null,
-        })
-        .eq("id", inventory.id);
+        },
+      ];
+
+      const { error } = await supabase
+        .from("inventories")
+        .upsert(upsertPayload, { onConflict: "id" });
 
       if (error) {
         // Check if it's an authentication error (401, 403)
@@ -95,13 +100,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
             // Try again with refreshed session
             const { error: retryError } = await supabase
               .from("inventories")
-              .update({
-                name: formData.name,
-                description: formData.description || null,
-                parent_space_id: formData.parent_space_id || null,
-                parent_inventory_id: formData.parent_inventory_id || null,
-              })
-              .eq("id", inventory.id);
+              .upsert(upsertPayload, { onConflict: "id" });
 
             if (retryError) {
               setErrorMessage(

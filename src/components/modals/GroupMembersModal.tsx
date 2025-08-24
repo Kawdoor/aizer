@@ -172,8 +172,18 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                           });
                           await loadMembers();
                         } catch (err) {
-                          console.error(err);
-                          setError("Failed to save group");
+                            // Surface richer error info from the API/network
+                            try {
+                              console.error("Error updating group:", {
+                                message: (err as any)?.message,
+                                details: (err as any)?.details,
+                                code: (err as any)?.code,
+                                stack: (err as any)?.stack,
+                              });
+                            } catch (e) {
+                              console.error("Error updating group (fallback):", err);
+                            }
+                            setError("Failed to save group (see console for details)");
                         } finally {
                           setGroupSaving(false);
                         }

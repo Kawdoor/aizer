@@ -307,7 +307,16 @@ export const useGroups = () => {
       await fetchGroups();
       return { updated: true };
     } catch (err) {
-      console.error("Error updating group:", err);
+      // Log richer error details for debugging network/fetch issues
+      try {
+        console.error("Error updating group:", {
+          message: (err as any)?.message,
+          details: (err as any)?.details,
+          code: (err as any)?.code,
+        });
+      } catch (e) {
+        console.error("Error updating group (fallback):", err);
+      }
       throw err;
     }
   };

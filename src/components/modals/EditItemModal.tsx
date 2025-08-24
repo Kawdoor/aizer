@@ -64,17 +64,21 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
     setErrorMessage(null);
 
     try {
-      const { data: updatedData, error } = await supabase
-        .from("items")
-        .update({
+      const upsertPayload = [
+        {
+          id: item.id,
           name: formData.name,
           quantity: parseInt(formData.quantity, 10) || 0,
           description: formData.description || null,
           inventory_id: formData.inventory_id,
           color: formData.color || null,
           price: formData.price ? parseFloat(formData.price) : null,
-        })
-        .eq("id", item.id)
+        },
+      ];
+
+      const { data: updatedData, error } = await supabase
+        .from("items")
+        .upsert(upsertPayload, { onConflict: "id" })
         .select();
 
       if (error) {
@@ -93,15 +97,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
             // Try again with refreshed session
             const { data: retryData, error: retryError } = await supabase
               .from("items")
-              .update({
-                name: formData.name,
-                quantity: parseInt(formData.quantity, 10) || 0,
-                description: formData.description || null,
-                inventory_id: formData.inventory_id,
-                color: formData.color || null,
-                price: formData.price ? parseFloat(formData.price) : null,
-              })
-              .eq("id", item.id)
+              .upsert(upsertPayload, { onConflict: "id" })
               .select();
 
             if (retryError) {

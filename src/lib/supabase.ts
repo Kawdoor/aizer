@@ -12,6 +12,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Developer guard: if the project wasn't configured with real env vars,
+// network requests will fail with "TypeError: Failed to fetch" in the browser.
+// Log a clear message so it's easy to spot in logs/console.
+if (
+  supabaseUrl.includes("placeholder.supabase") ||
+  supabaseUrl.includes("placeholder.supabase.co") ||
+  supabaseAnonKey === "placeholder-key"
+) {
+  // eslint-disable-next-line no-console
+  console.error(
+    "Supabase client appears to be using placeholder environment variables.\n" +
+      "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment (or Vercel project settings).\n" +
+      `Current VITE_SUPABASE_URL=${supabaseUrl} VITE_SUPABASE_ANON_KEY=${supabaseAnonKey.slice(0,6)}...`
+  );
+}
+
 export type Database = {
   public: {
     Tables: {
