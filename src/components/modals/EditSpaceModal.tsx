@@ -57,6 +57,7 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
           name: formData.name,
           description: formData.description || null,
           parent_id: formData.parent_id || null,
+          group_id: (space as any).group_id ?? undefined,
         },
       ];
 

@@ -75,7 +75,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
           color: formData.color || null,
           price: formData.price ? parseFloat(formData.price) : null,
           // preserve existing group_id to avoid insert failures
-          group_id: (item as any).group_id ?? null,
+          group_id: (item as any).group_id ?? undefined,
         },
       ];
 
