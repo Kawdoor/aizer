@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { ModalAnimations } from "./ModalAnimations";
 
@@ -19,6 +20,7 @@ interface CreateInventoryModalProps {
   inventories: Inventory[];
   onClose: () => void;
   onInventoryCreated: () => void;
+  initialParent?: { type: "space" | "inventory"; id: string } | null;
 }
 
 const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
@@ -27,8 +29,11 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
   inventories,
   onClose,
   onInventoryCreated,
+  initialParent = null,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { refreshSession } = useAuth();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -44,29 +49,111 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
     parent_inventory_id: "",
   });
 
+  useEffect(() => {
+    if (initialParent) {
+      setParentType(initialParent.type);
+      if (initialParent.type === "space") {
+        setFormData((f) => ({ ...f, parent_space_id: initialParent.id }));
+      } else {
+        setFormData((f) => ({ ...f, parent_inventory_id: initialParent.id }));
+      }
+    }
+  }, [initialParent]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    if (!groupId) {
+      setError("Missing group. Please select a group before creating an inventory.");
+      return;
+    }
+    // Validate parent exists depending on parentType
+    if (parentType === "space" && !formData.parent_space_id) {
+      setError("Please select a parent space.");
+      return;
+    }
+    if (parentType === "inventory" && !formData.parent_inventory_id) {
+      setError("Please select a parent inventory.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("inventories").insert([
-        {
-          group_id: groupId,
-          name: formData.name,
-          description: formData.description || null,
-          parent_space_id:
-            parentType === "space" ? formData.parent_space_id || null : null,
-          parent_inventory_id:
-            parentType === "inventory"
-              ? formData.parent_inventory_id || null
-              : null,
-        },
-      ]);
+      const { data, error } = await supabase
+        .from("inventories")
+        .insert([
+          {
+            group_id: groupId,
+            name: formData.name,
+            description: formData.description || null,
+            parent_space_id:
+              parentType === "space" ? formData.parent_space_id || null : null,
+            parent_inventory_id:
+              parentType === "inventory"
+                ? formData.parent_inventory_id || null
+                : null,
+          },
+        ])
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        // Try refresh session on auth-related errors
+        if (
+          error.code === "401" ||
+          error.code === "403" ||
+          error.message?.includes("JWT")
+        ) {
+          console.log("CreateInventoryModal: auth error, trying to refresh session...", error);
+          const refreshed = await refreshSession();
+          if (refreshed) {
+            const { data: retryData, error: retryError } = await supabase
+              .from("inventories")
+              .insert([
+                {
+                  group_id: groupId,
+                  name: formData.name,
+                  description: formData.description || null,
+                  parent_space_id:
+                    parentType === "space" ? formData.parent_space_id || null : null,
+                  parent_inventory_id:
+                    parentType === "inventory"
+                      ? formData.parent_inventory_id || null
+                      : null,
+                },
+              ])
+              .select();
+
+            if (retryError) {
+              console.error("CreateInventoryModal: retry failed", retryError, retryData);
+              setError("No se pudo crear el inventario después de refrescar la sesión.");
+              throw retryError;
+            }
+
+            console.log("CreateInventoryModal: created inventory after refresh", retryData);
+            onInventoryCreated();
+            return;
+          }
+        }
+
+        console.error("CreateInventoryModal: supabase insert error:", error, data);
+        if (error.code === "42501") {
+          setError(
+            "Permisos insuficientes para crear inventarios (RLS). Revisa las políticas en Supabase o que tu usuario pertenezca al grupo."
+          );
+        } else {
+          setError("Failed to create inventory: " + error.message);
+        }
+        throw error;
+      }
+
+      console.log("CreateInventoryModal: created inventory", data);
       onInventoryCreated();
     } catch (error) {
       console.error("Error creating inventory:", error);
+      if (!error) {
+        setError("Failed to create inventory.");
+      }
     } finally {
       setLoading(false);
     }
@@ -106,6 +193,11 @@ const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {error && (
+              <div className="bg-red-900/30 border border-red-800 p-3 text-sm text-red-200">
+                {error}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-light tracking-wider text-gray-300 mb-2">
                 NAME

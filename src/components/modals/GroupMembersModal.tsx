@@ -1,5 +1,6 @@
 import { Shield, UserPlus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { GroupMember } from "../../hooks/useGroups";
 import { TableView } from "../TableView";
@@ -14,6 +15,8 @@ interface GroupMembersModalProps {
   fetchMembers: (groupId: string) => Promise<GroupMember[]>;
   updateMemberRole: (memberId: string, isAdmin: boolean) => Promise<any>;
   removeMember: (memberId: string) => Promise<boolean>;
+  updateGroup: (groupId: string, data: { name?: string; description?: string | null }) => Promise<any>;
+  deleteGroup: (groupId: string) => Promise<boolean>;
 }
 
 const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
@@ -25,11 +28,17 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   fetchMembers,
   updateMemberRole,
   removeMember,
+  updateGroup,
+  deleteGroup,
 }) => {
   const { user } = useAuth();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(groupName);
+  const [editingDescription, setEditingDescription] = useState<string | null>(null);
+  const [groupSaving, setGroupSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -130,6 +139,60 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
           </div>
 
           <div className="p-6">
+            {/* Group edit section (owner only) */}
+            {isUserOwner && (
+              <div className="mb-6 border-b border-zinc-800 pb-4">
+                <h4 className="text-sm text-gray-400 mb-2">GROUP SETTINGS</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Name</label>
+                    <input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="w-full bg-black border border-zinc-800 px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Description</label>
+                    <input
+                      value={editingDescription ?? ""}
+                      onChange={(e) => setEditingDescription(e.target.value)}
+                      className="w-full bg-black border border-zinc-800 px-3 py-2 text-white text-sm"
+                      placeholder="Optional description"
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={async () => {
+                        setGroupSaving(true);
+                        try {
+                          await updateGroup(groupId, {
+                            name: editingName,
+                            description: editingDescription || null,
+                          });
+                          await loadMembers();
+                        } catch (err) {
+                          console.error(err);
+                          setError("Failed to save group");
+                        } finally {
+                          setGroupSaving(false);
+                        }
+                      }}
+                      className="bg-white text-black px-3 py-2 text-sm"
+                      disabled={groupSaving}
+                    >
+                      {groupSaving ? "SAVING..." : "SAVE GROUP"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmOpen(true)}
+                      className="bg-red-700 text-white px-3 py-2 text-sm"
+                    >
+                      DELETE GROUP
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {error && (
               <div className="bg-red-900/30 border border-red-800 p-4 mb-6">
                 <p className="text-red-200 text-sm">{error}</p>
@@ -234,6 +297,22 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       </div>
 
       <ModalAnimations />
+      {confirmOpen && (
+        <DeleteConfirmationModal
+          title={`Delete group ${groupName}`}
+          message={`Are you sure you want to delete the group "${groupName}" and all its data? This action cannot be undone.`}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={async () => {
+            try {
+              await deleteGroup(groupId);
+              onClose();
+            } catch (err) {
+              console.error(err);
+              setError("Failed to delete group");
+            }
+          }}
+        />
+      )}
     </>
   );
 };

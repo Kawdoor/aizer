@@ -64,7 +64,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
     setErrorMessage(null);
 
     try {
-      const { error } = await supabase
+      const { data: updatedData, error } = await supabase
         .from("items")
         .update({
           name: formData.name,
@@ -74,7 +74,8 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
           color: formData.color || null,
           price: formData.price ? parseFloat(formData.price) : null,
         })
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .select();
 
       if (error) {
         // Check if it's an authentication error (401, 403)
@@ -90,7 +91,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
 
           if (refreshed) {
             // Try again with refreshed session
-            const { error: retryError } = await supabase
+            const { data: retryData, error: retryError } = await supabase
               .from("items")
               .update({
                 name: formData.name,
@@ -100,7 +101,8 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
                 color: formData.color || null,
                 price: formData.price ? parseFloat(formData.price) : null,
               })
-              .eq("id", item.id);
+              .eq("id", item.id)
+              .select();
 
             if (retryError) {
               setErrorMessage(
@@ -109,6 +111,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
               throw retryError;
             }
 
+            console.log("EditItemModal: retry update succeeded", retryData);
             onItemUpdated();
             return;
           } else {
@@ -124,7 +127,8 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
         throw error;
       }
 
-      onItemUpdated();
+  console.log("EditItemModal: update succeeded", updatedData);
+  onItemUpdated();
       try {
         push({
           message: `Artículo "${formData.name}" actualizado.`,

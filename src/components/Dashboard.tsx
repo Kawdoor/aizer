@@ -1,4 +1,12 @@
-import { LogOut, Search, UserCircle, Users } from "lucide-react";
+import {
+  Grid,
+  List,
+  LogOut,
+  Plus,
+  Search,
+  UserCircle,
+  Users,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useGroups } from "../hooks/useGroups";
@@ -59,6 +67,8 @@ const Dashboard: React.FC = () => {
     inviteUserToGroup,
     updateMemberRole,
     removeMemberFromGroup,
+    updateGroup,
+    deleteGroup,
   } = useGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -96,6 +106,22 @@ const Dashboard: React.FC = () => {
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(
     null
   );
+  const [spacesViewMode, setSpacesViewMode] = useState<"grid" | "table">(
+    "grid"
+  );
+  const [inventoriesViewMode, setInventoriesViewMode] = useState<
+    "grid" | "table"
+  >("grid");
+  const [itemsViewMode, setItemsViewMode] = useState<"grid" | "table">("table");
+  const [createInventoryParent, setCreateInventoryParent] = useState<{
+    type: "space" | "inventory";
+    id: string;
+  } | null>(null);
+  const [createItemInventoryId, setCreateItemInventoryId] = useState<
+    string | null
+  >(null);
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false);
+  const groupMenuRef = useRef<HTMLDivElement | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
   const [spaceToEdit, setSpaceToEdit] = useState<Space | null>(null);
   const [inventoryToEdit, setInventoryToEdit] = useState<Inventory | null>(
@@ -132,6 +158,7 @@ const Dashboard: React.FC = () => {
 
     setLoading(true);
     try {
+  console.log("Dashboard.fetchData: fetching data for group", selectedGroupId);
       // Fetch spaces
       const { data: spacesData, error: spacesError } = await supabase
         .from("spaces")
@@ -162,6 +189,15 @@ const Dashboard: React.FC = () => {
       setSpaces(spacesData || []);
       setInventories(inventoriesData || []);
       setItems(itemsData || []);
+      console.log(
+        "Dashboard.fetchData: fetched",
+        (spacesData || []).length,
+        "spaces",
+        (inventoriesData || []).length,
+        "inventories",
+        (itemsData || []).length,
+        "items"
+      );
 
       // Reset search if active
       if (searchTerm) {
@@ -242,10 +278,15 @@ const Dashboard: React.FC = () => {
 
   const handleModalClose = () => {
     setActiveModal(null);
+    setCreateInventoryParent(null);
+    setCreateItemInventoryId(null);
   };
 
   const handleEntityCreated = async () => {
+  console.log("Dashboard.handleEntityCreated: refetching after entity change");
     setActiveModal(null);
+    setCreateInventoryParent(null);
+    setCreateItemInventoryId(null);
     await fetchData();
   };
 
@@ -459,7 +500,7 @@ const Dashboard: React.FC = () => {
             CREATE YOUR FIRST GROUP TO GET STARTED
           </p>
           <button
-            onClick={() => handleCreateGroup("New Group")}
+            onClick={() => setActiveModal("group")}
             className="bg-white text-black px-8 py-3 font-light text-sm tracking-wider hover:bg-gray-100 transition-colors"
           >
             CREATE GROUP
@@ -482,18 +523,58 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center">
-              <select
-                value={selectedGroupId}
-                onChange={(e) => setSelectedGroupId(e.target.value)}
-                className="bg-black border border-zinc-800 px-4 py-2 text-white font-light text-sm tracking-wide focus:outline-none focus:border-white transition-colors"
-              >
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
+            {/* left side: app title and group controls (unchanged) */}
+
+            <div className="flex items-center relative" ref={groupMenuRef}>
+              <div className="relative">
+                <button
+                  onClick={() => setGroupMenuOpen((s) => !s)}
+                  className="flex items-center space-x-3 bg-zinc-900 border border-zinc-800 px-3 py-2 text-white text-sm rounded-none hover:border-white transition-colors"
+                  aria-expanded={groupMenuOpen}
+                  aria-haspopup="listbox"
+                  title={groups.find((g) => g.id === selectedGroupId)?.name || "Select group"}
+                >
+                  <span className="text-sm font-light">
+                    {groups.find((g) => g.id === selectedGroupId)?.name || "Select group"}
+                  </span>
+                  <svg className="w-3 h-3 text-gray-400" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {groupMenuOpen && (
+                  <div className="absolute left-0 top-full mt-1 w-56 bg-zinc-900 border border-zinc-800 rounded-none shadow-lg z-50">
+                    <ul role="listbox" className="max-h-60 overflow-auto">
+                      {groups.map((group) => (
+                        <li key={group.id}>
+                          <button
+                            onClick={() => {
+                              setSelectedGroupId(group.id);
+                              setGroupMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm ${
+                              selectedGroupId === group.id ? "bg-zinc-800 text-white" : "text-gray-300 hover:bg-zinc-800"
+                            }`}
+                          >
+                            {group.name}
+                          </button>
+                        </li>
+                      ))}
+                      <li>
+                        <button
+                          onClick={() => {
+                            setGroupMenuOpen(false);
+                            setActiveModal("group");
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-zinc-800"
+                        >
+                          + Create group
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
 
               {selectedGroupId && (
                 <button
@@ -506,15 +587,24 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            <button
-              onClick={() => setActiveModal("group")}
-              className="text-gray-400 hover:text-white transition-colors text-sm font-light tracking-wider"
-            >
-              + NEW GROUP
-            </button>
+            {/* Removed extra '+' button next to group controls per UX request */}
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Search on the right side of the navbar (hidden on xs) */}
+            <div className="hidden sm:block relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search spaces, inventories, items..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  handleSearch(e.target.value);
+                }}
+                className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-64 sm:w-96"
+              />
+            </div>
             <NotificationsBell onAcceptedInvitation={fetchData} />
             <button
               onClick={() => setActiveModal("profile")}
@@ -538,30 +628,15 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+  <div className="max-w-7xl mx-auto px-6 py-2">
         {/* Pending invitations are now in the header notifications bell */}
 
         {/* Controls */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0 mb-8">
-          <div className="relative w-full max-w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search spaces, inventories, items..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                handleSearch(e.target.value);
-              }}
-              className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-full sm:w-96"
-            />
-          </div>
+          <div className="flex-1" />
 
           <div className="flex items-center space-x-4 flex-wrap">
-            <CreateMenu
-              selectedGroupId={selectedGroupId}
-              onOpenModal={(t) => setActiveModal(t)}
-            />
+            {/* Top '+' button removed per UX request; use per-section + buttons instead */}
           </div>
         </div>
 
@@ -590,7 +665,6 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
 
-              {/* No results message */}
               {!searchResults.spaces.length &&
                 !searchResults.inventories.length &&
                 !searchResults.items.length && (
@@ -598,7 +672,6 @@ const Dashboard: React.FC = () => {
                     No results found for "{searchTerm}"
                   </div>
                 )}
-
               {/* Space search results */}
               {searchResults.spaces.length > 0 && (
                 <div className="mb-8">
@@ -775,9 +848,43 @@ const Dashboard: React.FC = () => {
           {/* Space List */}
           {!searchResults.isSearching && (
             <div>
-              <h2 className="text-xl font-light text-white tracking-wider mb-4">
-                SPACES
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-light text-white tracking-wider">
+                  SPACES
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActiveModal("space")}
+                    disabled={!selectedGroupId}
+                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors mr-2"
+                    title="Add Space"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center bg-zinc-900 border border-zinc-800 p-1">
+                    <button
+                      onClick={() => setSpacesViewMode("grid")}
+                      className={`p-1 ${
+                        spacesViewMode === "grid"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <Grid className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setSpacesViewMode("table")}
+                      className={`p-1 ${
+                        spacesViewMode === "table"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
               {spaces.length === 0 ? (
                 <p className="text-gray-500">No spaces available</p>
               ) : (
@@ -822,7 +929,8 @@ const Dashboard: React.FC = () => {
                     selectedSpace ? (selectedSpace as Space).id : null
                   }
                   defaultViewMode="grid"
-                  dragType="space"
+                  viewMode={spacesViewMode}
+                  showViewToggle={false}
                   onDrop={async (target: any, payload) => {
                     if (payload.type === "item") {
                       await handleMoveItemToSpace(target.id, payload);
@@ -836,9 +944,60 @@ const Dashboard: React.FC = () => {
           {/* Inventories List (shows under spaces, same style) */}
           {!searchResults.isSearching && selectedSpace && (
             <div className="mt-8">
-              <h2 className="text-xl font-light text-white tracking-wider mb-4">
-                INVENTORIES
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-light text-white tracking-wider">
+                  INVENTORIES
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      // prefer to add inventory inside selected space or inventory
+                      if (selectedSpace) {
+                        setCreateInventoryParent({
+                          type: "space",
+                          id: selectedSpace.id,
+                        });
+                      } else if (selectedInventory) {
+                        setCreateInventoryParent({
+                          type: "inventory",
+                          id: selectedInventory.id,
+                        });
+                      } else {
+                        setCreateInventoryParent(null);
+                      }
+                      setActiveModal("inventory");
+                    }}
+                    disabled={!selectedGroupId}
+                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors mr-2"
+                    title="Add Inventory"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center bg-zinc-900 border border-zinc-800 p-1">
+                    <button
+                      onClick={() => setInventoriesViewMode("grid")}
+                      className={`p-1 ${
+                        inventoriesViewMode === "grid"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <Grid className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setInventoriesViewMode("table")}
+                      className={`p-1 ${
+                        inventoriesViewMode === "table"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
               {(selectedSpace
                 ? inventories.filter(
                     (inv) => inv.parent_space_id === selectedSpace.id
@@ -890,7 +1049,8 @@ const Dashboard: React.FC = () => {
                       : null
                   }
                   defaultViewMode="grid"
-                  dragType="inventory"
+                  viewMode={inventoriesViewMode}
+                  showViewToggle={false}
                   onDrop={async (target: any, payload) => {
                     // if payload.type is 'item', move that item into this inventory
                     if (payload.type === "item") {
@@ -905,9 +1065,46 @@ const Dashboard: React.FC = () => {
           {/* Items for selected inventory (appear under INVENTORIES) */}
           {!searchResults.isSearching && selectedInventory && (
             <div className="mt-6">
-              <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
-                ITEMS IN {selectedInventory.name}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-light text-gray-400 tracking-wider">
+                  ITEMS IN {selectedInventory.name}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      setCreateItemInventoryId(selectedInventory.id);
+                      setActiveModal("item");
+                    }}
+                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors"
+                    title="Add Item to this inventory"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center bg-zinc-900 border border-zinc-800 p-1">
+                    <button
+                      onClick={() => setItemsViewMode("grid")}
+                      className={`p-1 ${
+                        itemsViewMode === "grid"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <Grid className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setItemsViewMode("table")}
+                      className={`p-1 ${
+                        itemsViewMode === "table"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
               {items.filter(
                 (item) => item.inventory_id === selectedInventory.id
               ).length === 0 ? (
@@ -958,6 +1155,8 @@ const Dashboard: React.FC = () => {
                   onSelect={setSelectedItem}
                   selectedItemId={selectedItem?.id ?? null}
                   defaultViewMode="table"
+                  viewMode={itemsViewMode}
+                  showViewToggle={false}
                   dragType="item"
                 />
               )}
@@ -982,6 +1181,7 @@ const Dashboard: React.FC = () => {
             inventories={inventories}
             onClose={handleModalClose}
             onInventoryCreated={handleEntityCreated}
+            initialParent={createInventoryParent ?? undefined}
           />
         )}
 
@@ -991,6 +1191,7 @@ const Dashboard: React.FC = () => {
             inventories={inventories}
             onClose={handleModalClose}
             onItemCreated={handleEntityCreated}
+            initialInventoryId={createItemInventoryId ?? undefined}
           />
         )}
 
@@ -1069,6 +1270,33 @@ const Dashboard: React.FC = () => {
             fetchMembers={fetchGroupMembers}
             updateMemberRole={updateMemberRole}
             removeMember={removeMemberFromGroup}
+            updateGroup={async (groupId: string, data: any) => {
+              try {
+                await updateGroup(groupId, data);
+              } catch (err) {
+                console.error("Error updating group from modal", err);
+                throw err;
+              }
+            }}
+            deleteGroup={async (groupId: string) => {
+              try {
+                await deleteGroup(groupId);
+                // if deleted group was selected, clear selection
+                if (selectedGroupId === groupId) {
+                  setSelectedGroupId("");
+                }
+                // refresh groups
+                try {
+                  // refetch groups
+                  // useGroups provides fetch via refetch
+                  // but it's not exported here; calling fetchData will be enough for now
+                } catch {}
+                return true;
+              } catch (err) {
+                console.error("Error deleting group from modal", err);
+                throw err;
+              }
+            }}
           />
         )}
 
@@ -1142,7 +1370,7 @@ const CreateMenu: React.FC<CreateMenuProps> = ({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-full sm:w-56 bg-zinc-900 border border-zinc-800 rounded shadow-lg z-40">
+        <div className="absolute right-0 top-full mt-1 w-full sm:w-56 bg-zinc-900 border border-zinc-800 rounded-none shadow-lg z-40">
           <ul>
             <li>
               <button

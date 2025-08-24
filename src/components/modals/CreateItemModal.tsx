@@ -13,6 +13,7 @@ interface CreateItemModalProps {
   inventories: Inventory[];
   onClose: () => void;
   onItemCreated: () => void;
+  initialInventoryId?: string | null;
 }
 
 const CreateItemModal: React.FC<CreateItemModalProps> = ({
@@ -20,6 +21,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
   inventories,
   onClose,
   onItemCreated,
+  initialInventoryId = null,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +39,12 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
     color: "",
     price: "",
   });
+
+  useEffect(() => {
+    if (initialInventoryId) {
+      setFormData((f) => ({ ...f, inventory_id: initialInventoryId }));
+    }
+  }, [initialInventoryId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -294,6 +294,36 @@ export const useGroups = () => {
     }
   };
 
+  const updateGroup = async (
+    groupId: string,
+    data: { name?: string; description?: string | null }
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .update(data)
+        .eq("id", groupId);
+      if (error) throw error;
+      await fetchGroups();
+      return { updated: true };
+    } catch (err) {
+      console.error("Error updating group:", err);
+      throw err;
+    }
+  };
+
+  const deleteGroup = async (groupId: string) => {
+    try {
+      const { error } = await supabase.from("groups").delete().eq("id", groupId);
+      if (error) throw error;
+      await fetchGroups();
+      return true;
+    } catch (err) {
+      console.error("Error deleting group:", err);
+      throw err;
+    }
+  };
+
   const acceptInvitation = async (_memberId: string) => {
     // No status column: accepting is a no-op server-side; simply refresh local state
     await fetchGroups();
@@ -347,6 +377,8 @@ export const useGroups = () => {
     inviteUserToGroup,
     updateMemberRole,
     removeMemberFromGroup,
+  updateGroup,
+  deleteGroup,
     acceptInvitation,
     rejectInvitation,
     fetchPendingInvitations,
