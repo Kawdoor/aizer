@@ -266,10 +266,10 @@ export const useGroups = () => {
     // Update the role column on group_members: set to 'admin' or 'member'
     try {
       const newRole = _isAdmin ? "admin" : "member";
+      const upsertPayload = [{ id: _memberId, role: newRole }];
       const { error } = await supabase
         .from("group_members")
-        .update({ role: newRole })
-        .eq("id", _memberId);
+        .upsert(upsertPayload, { onConflict: "id" });
       if (error) throw error;
       await fetchGroups();
       return { updated: true };
@@ -299,10 +299,10 @@ export const useGroups = () => {
     data: { name?: string; description?: string | null }
   ) => {
     try {
+      const upsertPayload = [{ id: groupId, ...data }];
       const { error } = await supabase
         .from("groups")
-        .update(data)
-        .eq("id", groupId);
+        .upsert(upsertPayload, { onConflict: "id" });
       if (error) throw error;
       await fetchGroups();
       return { updated: true };

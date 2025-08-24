@@ -88,14 +88,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
 
     try {
       if (profile) {
-        // Update existing profile
-        const { error } = await supabase
-          .from("profiles")
-          .update({
+        // Update existing profile via upsert to avoid PATCH method
+        const upsertPayload = [
+          {
+            id: user.id,
             display_name: formData.display_name,
             accent_color: formData.accent_color,
-          })
-          .eq("id", user.id);
+          },
+        ];
+
+        const { error } = await supabase
+          .from("profiles")
+          .upsert(upsertPayload, { onConflict: "id" });
 
         if (error) throw error;
       } else {

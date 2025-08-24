@@ -77,6 +77,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
           description: formData.description || null,
           parent_space_id: formData.parent_space_id || null,
           parent_inventory_id: formData.parent_inventory_id || null,
+          group_id: (inventory as any).group_id ?? undefined,
         },
       ];
 

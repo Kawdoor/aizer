@@ -51,14 +51,18 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
     // (availableParentSpaces is computed below for the select)
 
     try {
-      const { error } = await supabase
-        .from("spaces")
-        .update({
+      const upsertPayload = [
+        {
+          id: space.id,
           name: formData.name,
           description: formData.description || null,
           parent_id: formData.parent_id || null,
-        })
-        .eq("id", space.id);
+        },
+      ];
+
+      const { error } = await supabase
+        .from("spaces")
+        .upsert(upsertPayload, { onConflict: "id" });
 
       if (error) {
         // Check if it's an authentication error (401, 403)
@@ -76,12 +80,7 @@ const EditSpaceModal: React.FC<EditSpaceModalProps> = ({
             // Try again with refreshed session
             const { error: retryError } = await supabase
               .from("spaces")
-              .update({
-                name: formData.name,
-                description: formData.description || null,
-                parent_id: formData.parent_id || null,
-              })
-              .eq("id", space.id);
+              .upsert(upsertPayload, { onConflict: "id" });
 
             if (retryError) {
               setErrorMessage(

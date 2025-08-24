@@ -417,11 +417,15 @@ const Dashboard: React.FC = () => {
   ) => {
     // payload.id is the item id being moved
     try {
+      const item = items.find((it) => it.id === payload.id);
+      const group_id = item?.group_id ?? selectedGroupId ?? null;
+
       const upsertPayload = [
         {
           id: payload.id,
           inventory_id: targetInventoryId,
           parent_space_id: null,
+          group_id,
         },
       ];
 
@@ -447,8 +451,16 @@ const Dashboard: React.FC = () => {
   ) => {
     // Moving an item to a space will unassign its inventory (set inventory_id to null) and set parent_space_id
     try {
+      const item = items.find((it) => it.id === payload.id);
+      const group_id = item?.group_id ?? selectedGroupId ?? null;
+
       const upsertPayload = [
-        { id: payload.id, inventory_id: null, parent_space_id: targetSpaceId },
+        {
+          id: payload.id,
+          inventory_id: null,
+          parent_space_id: targetSpaceId,
+          group_id,
+        },
       ];
 
       const { error } = await supabase

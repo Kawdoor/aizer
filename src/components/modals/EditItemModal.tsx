@@ -19,6 +19,7 @@ interface Item {
   quantity: number;
   description: string | null;
   inventory_id: string;
+  group_id?: string;
   color: string | null;
   price: number | null;
   measures: any | null;
@@ -73,6 +74,8 @@ const EditItemModal: React.FC<EditItemModalProps> = ({
           inventory_id: formData.inventory_id,
           color: formData.color || null,
           price: formData.price ? parseFloat(formData.price) : null,
+          // preserve existing group_id to avoid insert failures
+          group_id: (item as any).group_id ?? null,
         },
       ];
 
