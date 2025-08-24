@@ -53,6 +53,7 @@ export const TableView = <T extends Record<string, any>>({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
+  // resize effect: switch to grid on small screens when uncontrolled
   useEffect(() => {
     if (typeof window === "undefined") return;
     const setGridIfSmall = () => {
@@ -142,7 +143,7 @@ export const TableView = <T extends Record<string, any>>({
                     else setViewModeState("grid");
                   }}
                   className={`p-1 ${
-                    viewMode === "grid"
+                    (viewMode as any) === "grid"
                       ? "bg-zinc-800 text-white"
                       : "text-gray-500 hover:text-white"
                   }`}
@@ -155,7 +156,7 @@ export const TableView = <T extends Record<string, any>>({
                     else setViewModeState("table");
                   }}
                   className={`p-1 ${
-                    viewMode === "table"
+                    (viewMode as any) === "table"
                       ? "bg-zinc-800 text-white"
                       : "text-gray-500 hover:text-white"
                   }`}
@@ -168,7 +169,7 @@ export const TableView = <T extends Record<string, any>>({
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((item) => (
+          {data.map((item, idx) => (
             <Fragment key={String(item[idField])}>
               <div
                 onClick={() => onSelect && onSelect(item)}
@@ -193,7 +194,7 @@ export const TableView = <T extends Record<string, any>>({
                   dragOverId === String(item[idField])
                     ? "ring-2 ring-white/20 scale-105"
                     : ""
-                }`}
+                } transition-all duration-300 ease-out`}
               >
                 {(onEdit || onDelete) && (
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -273,7 +274,7 @@ export const TableView = <T extends Record<string, any>>({
                   else setViewModeState("grid");
                 }}
                 className={`p-1 ${
-                  viewMode === "grid"
+                  (viewMode as any) === "grid"
                     ? "bg-zinc-800 text-white"
                     : "text-gray-500 hover:text-white"
                 }`}
@@ -286,7 +287,7 @@ export const TableView = <T extends Record<string, any>>({
                   else setViewModeState("table");
                 }}
                 className={`p-1 ${
-                  viewMode === "table"
+                  (viewMode as any) === "table"
                     ? "bg-zinc-800 text-white"
                     : "text-gray-500 hover:text-white"
                 }`}
@@ -316,7 +317,7 @@ export const TableView = <T extends Record<string, any>>({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {data.map((item) => (
+            {data.map((item, idx) => (
               <Fragment key={String(item[idField])}>
                 <tr
                   onClick={() => onSelect && onSelect(item)}
@@ -338,7 +339,7 @@ export const TableView = <T extends Record<string, any>>({
                     selectedItemId === String(item[idField])
                       ? "bg-white text-black"
                       : "hover:bg-zinc-900/50"
-                  }`}
+                  } transition-all duration-300 ease-out`}
                 >
                   {columns.map((column) => (
                     <td

@@ -127,6 +127,7 @@ const Dashboard: React.FC = () => {
   const [inventoryToEdit, setInventoryToEdit] = useState<Inventory | null>(
     null
   );
+  const [mounted, setMounted] = useState(false);
 
   // Estado para el modal de confirmación de eliminación
   const [deleteModalConfig, setDeleteModalConfig] = useState<{
@@ -151,11 +152,16 @@ const Dashboard: React.FC = () => {
     if (selectedGroupId) {
       fetchData();
     }
+
+    // trigger mount animation when selected group or data changes
+    setMounted(true);
+    return () => setMounted(false);
   }, [selectedGroupId]);
 
   const fetchData = async () => {
     if (!selectedGroupId) return;
-
+    // trigger exit animation before loading
+    setMounted(false);
     setLoading(true);
     try {
       console.log(
@@ -192,6 +198,8 @@ const Dashboard: React.FC = () => {
       setSpaces(spacesData || []);
       setInventories(inventoriesData || []);
       setItems(itemsData || []);
+      // trigger enter animation after data set
+      setMounted(true);
       console.log(
         "Dashboard.fetchData: fetched",
         (spacesData || []).length,
@@ -418,10 +426,19 @@ const Dashboard: React.FC = () => {
     // payload.id is the item id being moved
     try {
       const item = items.find((it) => it.id === payload.id);
-      const group_id = item?.group_id ?? selectedGroupId ?? null;
+      if (!item) {
+        console.error(
+          "handleMoveItemToInventory: item not found in state",
+          payload.id
+        );
+        throw new Error("Item not found");
+      }
+      const group_id = (item as any)?.group_id ?? selectedGroupId ?? null;
 
+      // include existing item fields to avoid NOT NULL violations on upsert insert
       const upsertPayload = [
         {
+          ...(item as any),
           id: payload.id,
           inventory_id: targetInventoryId,
           parent_space_id: null,
@@ -429,10 +446,15 @@ const Dashboard: React.FC = () => {
         },
       ];
 
+      console.log("handleMoveItemToInventory - upsert payload:", upsertPayload);
+
       const { error } = await supabase
         .from("items")
         .upsert(upsertPayload, { onConflict: "id" });
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase upsert error moving item to inventory:", error);
+        throw error;
+      }
       await fetchData();
       try {
         push({ message: "Item moved.", type: "success" });
@@ -452,10 +474,19 @@ const Dashboard: React.FC = () => {
     // Moving an item to a space will unassign its inventory (set inventory_id to null) and set parent_space_id
     try {
       const item = items.find((it) => it.id === payload.id);
-      const group_id = item?.group_id ?? selectedGroupId ?? null;
+      if (!item) {
+        console.error(
+          "handleMoveItemToSpace: item not found in state",
+          payload.id
+        );
+        throw new Error("Item not found");
+      }
+      const group_id = (item as any)?.group_id ?? selectedGroupId ?? null;
 
+      // include existing item fields to avoid NOT NULL violations on upsert insert
       const upsertPayload = [
         {
+          ...(item as any),
           id: payload.id,
           inventory_id: null,
           parent_space_id: targetSpaceId,
@@ -463,10 +494,15 @@ const Dashboard: React.FC = () => {
         },
       ];
 
+      console.log("handleMoveItemToSpace - upsert payload:", upsertPayload);
+
       const { error } = await supabase
         .from("items")
         .upsert(upsertPayload, { onConflict: "id" });
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase upsert error moving item to space:", error);
+        throw error;
+      }
       await fetchData();
       try {
         push({ message: "Item moved to space.", type: "success" });
@@ -672,7 +708,11 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-2">
+      <div
+        className={`max-w-7xl mx-auto px-6 py-2 ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        } transition-all duration-300 ease-out`}
+      >
         {/* Pending invitations are now in the header notifications bell */}
 
         {/* Controls */}
@@ -688,7 +728,13 @@ const Dashboard: React.FC = () => {
         <div className="space-y-8">
           {/* Search Results */}
           {searchResults.isSearching && (
-            <div>
+            <div
+              className={`${
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2"
+              } transition-all duration-300`}
+            >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-light text-white tracking-wider">
                   SEARCH RESULTS FOR "{searchTerm}"
@@ -718,7 +764,13 @@ const Dashboard: React.FC = () => {
                 )}
               {/* Space search results */}
               {searchResults.spaces.length > 0 && (
-                <div className="mb-8">
+                <div
+                  className={`mb-8 ${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 -translate-y-2"
+                  } transition-all duration-300`}
+                >
                   <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
                     SPACES ({searchResults.spaces.length})
                   </h3>
@@ -766,7 +818,13 @@ const Dashboard: React.FC = () => {
 
               {/* Inventory search results */}
               {searchResults.inventories.length > 0 && (
-                <div className="mb-8">
+                <div
+                  className={`mb-8 ${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 -translate-y-2"
+                  } transition-all duration-300`}
+                >
                   <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
                     INVENTORIES ({searchResults.inventories.length})
                   </h3>
@@ -816,7 +874,13 @@ const Dashboard: React.FC = () => {
 
               {/* Item search results */}
               {searchResults.items.length > 0 && (
-                <div className="mb-8">
+                <div
+                  className={`mb-8 ${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 -translate-y-2"
+                  } transition-all duration-300`}
+                >
                   <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
                     ITEMS ({searchResults.items.length})
                   </h3>
@@ -891,7 +955,13 @@ const Dashboard: React.FC = () => {
 
           {/* Space List */}
           {!searchResults.isSearching && (
-            <div>
+            <div
+              className={`${
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2"
+              } transition-all duration-300`}
+            >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-light text-white tracking-wider">
                   SPACES
@@ -987,7 +1057,13 @@ const Dashboard: React.FC = () => {
 
           {/* Inventories List (shows under spaces, same style) */}
           {!searchResults.isSearching && selectedSpace && (
-            <div className="mt-8">
+            <div
+              className={`mt-8 ${
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2"
+              } transition-all duration-300`}
+            >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-light text-white tracking-wider">
                   INVENTORIES
@@ -1108,7 +1184,13 @@ const Dashboard: React.FC = () => {
 
           {/* Items for selected inventory (appear under INVENTORIES) */}
           {!searchResults.isSearching && selectedInventory && (
-            <div className="mt-6">
+            <div
+              className={`mt-6 ${
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2"
+              } transition-all duration-300`}
+            >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-light text-gray-400 tracking-wider">
                   ITEMS IN {selectedInventory.name}
