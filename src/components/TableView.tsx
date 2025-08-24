@@ -52,6 +52,16 @@ export const TableView = <T extends Record<string, any>>({
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Animation mount effect
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => {
+      clearTimeout(timer);
+      setMounted(false);
+    };
+  }, [data, viewMode]);
 
   // resize effect: switch to grid on small screens when uncontrolled
   useEffect(() => {
@@ -194,7 +204,14 @@ export const TableView = <T extends Record<string, any>>({
                   dragOverId === String(item[idField])
                     ? "ring-2 ring-white/20 scale-105"
                     : ""
-                } transition-all duration-300 ease-out`}
+                } ${
+                  mounted
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-4"
+                } transition-all duration-500 ease-out`}
+                style={{
+                  transitionDelay: `${idx * 100}ms`,
+                }}
               >
                 {(onEdit || onDelete) && (
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -339,7 +356,14 @@ export const TableView = <T extends Record<string, any>>({
                     selectedItemId === String(item[idField])
                       ? "bg-white text-black"
                       : "hover:bg-zinc-900/50"
-                  } transition-all duration-300 ease-out`}
+                  } ${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2"
+                  } transition-all duration-500 ease-out`}
+                  style={{
+                    transitionDelay: `${idx * 80}ms`,
+                  }}
                 >
                   {columns.map((column) => (
                     <td

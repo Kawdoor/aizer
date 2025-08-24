@@ -153,14 +153,18 @@ const Dashboard: React.FC = () => {
       fetchData();
     }
 
-    // trigger mount animation when selected group or data changes
-    setMounted(true);
-    return () => setMounted(false);
+    // trigger mount animation when selected group or data changes with smoother timing
+    setMounted(false);
+    const timer = setTimeout(() => setMounted(true), 100);
+    return () => {
+      clearTimeout(timer);
+      setMounted(false);
+    };
   }, [selectedGroupId]);
 
   const fetchData = async () => {
     if (!selectedGroupId) return;
-    // trigger exit animation before loading
+    // trigger exit animation before loading for smoother transitions
     setMounted(false);
     setLoading(true);
     try {
@@ -198,8 +202,8 @@ const Dashboard: React.FC = () => {
       setSpaces(spacesData || []);
       setInventories(inventoriesData || []);
       setItems(itemsData || []);
-      // trigger enter animation after data set
-      setMounted(true);
+      // trigger enter animation after data set with better timing
+      setTimeout(() => setMounted(true), 150);
       console.log(
         "Dashboard.fetchData: fetched",
         (spacesData || []).length,
@@ -577,141 +581,166 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-8">
-            <div>
-              <h1 className="text-2xl font-thin tracking-[0.3em]">AIZER</h1>
-              <p className="text-gray-400 text-xs font-light tracking-wider mt-1">
-                {user?.email}
-              </p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          {/* Mobile and Desktop Layout */}
+          <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
+            {/* Left side - App title and group controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-8">
+              <div className="flex justify-between items-start sm:block">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-thin tracking-[0.3em]">
+                    AIZER
+                  </h1>
+                  <p className="text-gray-400 text-xs font-light tracking-wider mt-1">
+                    {user?.email}
+                  </p>
+                </div>
 
-            {/* left side: app title and group controls (unchanged) */}
-
-            <div className="flex items-center relative" ref={groupMenuRef}>
-              <div className="relative">
+                {/* Mobile menu button for sign out */}
                 <button
-                  onClick={() => setGroupMenuOpen((s) => !s)}
-                  className="flex items-center space-x-3 bg-zinc-900 border border-zinc-800 px-3 py-2 text-white text-sm rounded-none hover:border-white transition-colors"
-                  aria-expanded={groupMenuOpen}
-                  aria-haspopup="listbox"
-                  title={
-                    groups.find((g) => g.id === selectedGroupId)?.name ||
-                    "Select group"
-                  }
+                  onClick={signOut}
+                  className="flex sm:hidden items-center text-gray-400 hover:text-white transition-colors p-2"
+                  title="Sign Out"
                 >
-                  <span className="text-sm font-light">
-                    {groups.find((g) => g.id === selectedGroupId)?.name ||
-                      "Select group"}
-                  </span>
-                  <svg
-                    className="w-3 h-3 text-gray-400"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M6 8L10 12L14 8"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <LogOut className="w-4 h-4" />
                 </button>
-
-                {groupMenuOpen && (
-                  <div className="absolute left-0 top-full mt-1 w-56 bg-zinc-900 border border-zinc-800 rounded-none shadow-lg z-50">
-                    <ul role="listbox" className="max-h-60 overflow-auto">
-                      {groups.map((group) => (
-                        <li key={group.id}>
-                          <button
-                            onClick={() => {
-                              setSelectedGroupId(group.id);
-                              setGroupMenuOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-sm ${
-                              selectedGroupId === group.id
-                                ? "bg-zinc-800 text-white"
-                                : "text-gray-300 hover:bg-zinc-800"
-                            }`}
-                          >
-                            {group.name}
-                          </button>
-                        </li>
-                      ))}
-                      <li>
-                        <button
-                          onClick={() => {
-                            setGroupMenuOpen(false);
-                            setActiveModal("group");
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-zinc-800"
-                        >
-                          + Create group
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                )}
               </div>
 
-              {selectedGroupId && (
+              {/* Group controls */}
+              <div
+                className="flex items-center relative w-full sm:w-auto"
+                ref={groupMenuRef}
+              >
+                <div className="relative flex-1 sm:flex-none">
+                  <button
+                    onClick={() => setGroupMenuOpen((s) => !s)}
+                    className="flex items-center justify-between w-full sm:w-auto space-x-3 bg-zinc-900 border border-zinc-800 px-3 py-2 text-white text-sm rounded-none hover:border-white transition-colors"
+                    aria-expanded={groupMenuOpen}
+                    aria-haspopup="listbox"
+                    title={
+                      groups.find((g) => g.id === selectedGroupId)?.name ||
+                      "Select group"
+                    }
+                  >
+                    <span className="text-sm font-light truncate">
+                      {groups.find((g) => g.id === selectedGroupId)?.name ||
+                        "Select group"}
+                    </span>
+                    <svg
+                      className="w-3 h-3 text-gray-400 flex-shrink-0"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 8L10 12L14 8"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+
+                  {groupMenuOpen && (
+                    <div className="absolute left-0 top-full mt-1 w-full sm:w-56 bg-zinc-900 border border-zinc-800 rounded-none shadow-lg z-50">
+                      <ul role="listbox" className="max-h-60 overflow-auto">
+                        {groups.map((group) => (
+                          <li key={group.id}>
+                            <button
+                              onClick={() => {
+                                setSelectedGroupId(group.id);
+                                setGroupMenuOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm ${
+                                selectedGroupId === group.id
+                                  ? "bg-zinc-800 text-white"
+                                  : "text-gray-300 hover:bg-zinc-800"
+                              }`}
+                            >
+                              {group.name}
+                            </button>
+                          </li>
+                        ))}
+                        <li>
+                          <button
+                            onClick={() => {
+                              setGroupMenuOpen(false);
+                              setActiveModal("group");
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-zinc-800"
+                          >
+                            + Create group
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {selectedGroupId && (
+                  <button
+                    onClick={() => setActiveModal("members")}
+                    className="ml-2 p-2 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-zinc-800 rounded"
+                    title="Manage Group Members"
+                  >
+                    <Users className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Right side - Search and user controls */}
+            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+              {/* Search - visible on mobile now */}
+              <div className="relative w-full sm:w-auto">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search spaces, inventories, items..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    handleSearch(e.target.value);
+                  }}
+                  className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-full sm:w-64 lg:w-96"
+                />
+              </div>
+
+              {/* User controls */}
+              <div className="flex items-center justify-between sm:justify-start space-x-4">
+                <div className="flex items-center space-x-2">
+                  <NotificationsBell onAcceptedInvitation={fetchData} />
+                  <button
+                    onClick={() => setActiveModal("profile")}
+                    className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors p-2 border border-transparent hover:border-zinc-800 rounded-full"
+                    title="Profile settings"
+                  >
+                    <UserCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Desktop sign out button */}
                 <button
-                  onClick={() => setActiveModal("members")}
-                  className="ml-2 p-2 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-zinc-800 rounded"
-                  title="Manage Group Members"
+                  onClick={signOut}
+                  className="hidden sm:flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
                 >
-                  <Users className="w-4 h-4" />
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-sm font-light tracking-wider">
+                    SIGN OUT
+                  </span>
                 </button>
-              )}
+              </div>
             </div>
-
-            {/* Removed extra '+' button next to group controls per UX request */}
-          </div>
-
-          <div className="flex items-center space-x-4">
-            {/* Search on the right side of the navbar (hidden on xs) */}
-            <div className="hidden sm:block relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search spaces, inventories, items..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  handleSearch(e.target.value);
-                }}
-                className="bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2 text-white font-light text-sm tracking-wide placeholder-gray-500 focus:outline-none focus:border-white transition-colors w-64 sm:w-96"
-              />
-            </div>
-            <NotificationsBell onAcceptedInvitation={fetchData} />
-            <button
-              onClick={() => setActiveModal("profile")}
-              className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors p-2 border border-transparent hover:border-zinc-800 rounded-full"
-              title="Profile settings"
-            >
-              <UserCircle className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={signOut}
-              className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm font-light tracking-wider">
-                SIGN OUT
-              </span>
-            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div
-        className={`max-w-7xl mx-auto px-6 py-2 ${
-          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-        } transition-all duration-300 ease-out`}
+        className={`max-w-7xl mx-auto px-4 sm:px-6 py-2 ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        } transition-all duration-700 ease-out`}
       >
         {/* Pending invitations are now in the header notifications bell */}
 
@@ -725,18 +754,18 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Search Results */}
           {searchResults.isSearching && (
             <div
               className={`${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-2"
-              } transition-all duration-300`}
+                  : "opacity-0 translate-y-6"
+              } transition-all duration-600 ease-out delay-100`}
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-light text-white tracking-wider">
+              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6">
+                <h2 className="text-lg sm:text-xl font-light text-white tracking-wider">
                   SEARCH RESULTS FOR "{searchTerm}"
                 </h2>
                 <button
@@ -749,7 +778,7 @@ const Dashboard: React.FC = () => {
                       isSearching: false,
                     });
                   }}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  className="text-sm text-gray-400 hover:text-white transition-colors self-start sm:self-center"
                 >
                   CLEAR SEARCH
                 </button>
@@ -768,14 +797,273 @@ const Dashboard: React.FC = () => {
                   className={`mb-8 ${
                     mounted
                       ? "opacity-100 translate-y-0"
-                      : "opacity-0 -translate-y-2"
-                  } transition-all duration-300`}
+                      : "opacity-0 translate-y-6"
+                  } transition-all duration-600 ease-out delay-200`}
                 >
-                  <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
+                  <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider mb-4">
                     SPACES ({searchResults.spaces.length})
                   </h3>
+                  <div
+                    className={`${
+                      mounted
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-4"
+                    } transition-all duration-600 ease-out delay-100`}
+                  >
+                    <TableView
+                      data={searchResults.spaces}
+                      columns={[
+                        {
+                          key: "name",
+                          label: "NAME",
+                        },
+                        {
+                          key: "description",
+                          label: "DESCRIPTION",
+                        },
+                        {
+                          key: "inventories",
+                          label: "INVENTORIES",
+                          render: (space) => (
+                            <span>
+                              {
+                                inventories.filter(
+                                  (inv) => inv.parent_space_id === space.id
+                                ).length
+                              }
+                            </span>
+                          ),
+                        },
+                        {
+                          key: "created_at",
+                          label: "CREATED",
+                          render: (space) => (
+                            <span>
+                              {new Date(space.created_at).toLocaleDateString()}
+                            </span>
+                          ),
+                        },
+                      ]}
+                      onEdit={handleEditSpace}
+                      onDelete={handleDeleteSpace}
+                      onSelect={handleSelectSpace}
+                      defaultViewMode="grid"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Inventory search results */}
+              {searchResults.inventories.length > 0 && (
+                <div
+                  className={`mb-8 ${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-6"
+                  } transition-all duration-600 ease-out delay-300`}
+                >
+                  <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider mb-4">
+                    INVENTORIES ({searchResults.inventories.length})
+                  </h3>
+                  <div
+                    className={`${
+                      mounted
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-4"
+                    } transition-all duration-600 ease-out delay-200`}
+                  >
+                    <TableView
+                      data={searchResults.inventories}
+                      columns={[
+                        {
+                          key: "name",
+                          label: "NAME",
+                        },
+                        {
+                          key: "description",
+                          label: "DESCRIPTION",
+                        },
+                        {
+                          key: "items",
+                          label: "ITEMS",
+                          render: (inventory) => (
+                            <span>
+                              {
+                                items.filter(
+                                  (item) => item.inventory_id === inventory.id
+                                ).length
+                              }
+                            </span>
+                          ),
+                        },
+                        {
+                          key: "created_at",
+                          label: "CREATED",
+                          render: (inventory) => (
+                            <span>
+                              {new Date(
+                                inventory.created_at
+                              ).toLocaleDateString()}
+                            </span>
+                          ),
+                        },
+                      ]}
+                      onEdit={handleEditInventory}
+                      onDelete={handleDeleteInventory}
+                      onSelect={setSelectedInventory}
+                      defaultViewMode="grid"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Item search results */}
+              {searchResults.items.length > 0 && (
+                <div
+                  className={`mb-8 ${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-6"
+                  } transition-all duration-600 ease-out delay-400`}
+                >
+                  <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider mb-4">
+                    ITEMS ({searchResults.items.length})
+                  </h3>
+                  <div
+                    className={`${
+                      mounted
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-4"
+                    } transition-all duration-600 ease-out delay-300`}
+                  >
+                    <TableView
+                      data={searchResults.items}
+                      columns={[
+                        {
+                          key: "name",
+                          label: "NAME",
+                        },
+                        {
+                          key: "quantity",
+                          label: "QUANTITY",
+                        },
+                        {
+                          key: "price",
+                          label: "PRICE",
+                          render: (item) =>
+                            item.price ? `$${item.price.toFixed(2)}` : "-",
+                        },
+                        {
+                          key: "description",
+                          label: "DESCRIPTION",
+                        },
+                        {
+                          key: "color",
+                          label: "COLOR",
+                          render: (item) =>
+                            item.color ? (
+                              <div className="flex items-center space-x-2">
+                                <div
+                                  className="w-4 h-4 rounded-full"
+                                  style={{ backgroundColor: item.color }}
+                                ></div>
+                                <span>{item.color}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            ),
+                        },
+                        {
+                          key: "inventory",
+                          label: "INVENTORY",
+                          render: (item) => {
+                            const inv = inventories.find(
+                              (i) => i.id === item.inventory_id
+                            );
+                            return inv ? inv.name : "-";
+                          },
+                        },
+                        {
+                          key: "created_at",
+                          label: "CREATED",
+                          render: (item) => (
+                            <span>
+                              {new Date(item.created_at).toLocaleDateString()}
+                            </span>
+                          ),
+                        },
+                      ]}
+                      onEdit={handleEditItem}
+                      onDelete={handleDeleteItem}
+                      onSelect={setSelectedItem}
+                      defaultViewMode="table"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Normal Content (when not searching) */}
+
+          {/* Space List */}
+          {!searchResults.isSearching && (
+            <div
+              className={`${
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-6"
+              } transition-all duration-600 ease-out delay-100`}
+            >
+              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
+                <h2 className="text-lg sm:text-xl font-light text-white tracking-wider">
+                  SPACES
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActiveModal("space")}
+                    disabled={!selectedGroupId}
+                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors"
+                    title="Add Space"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center bg-zinc-900 border border-zinc-800 p-1">
+                    <button
+                      onClick={() => setSpacesViewMode("grid")}
+                      className={`p-1 ${
+                        spacesViewMode === "grid"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <Grid className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setSpacesViewMode("table")}
+                      className={`p-1 ${
+                        spacesViewMode === "table"
+                          ? "bg-zinc-800 text-white"
+                          : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {spaces.length === 0 ? (
+                <p className="text-gray-500">No spaces available</p>
+              ) : (
+                <div
+                  className={`${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-4"
+                  } transition-all duration-600 ease-out delay-100`}
+                >
                   <TableView
-                    data={searchResults.spaces}
+                    data={spaces}
                     columns={[
                       {
                         key: "name",
@@ -811,246 +1099,19 @@ const Dashboard: React.FC = () => {
                     onEdit={handleEditSpace}
                     onDelete={handleDeleteSpace}
                     onSelect={handleSelectSpace}
-                    defaultViewMode="grid"
-                  />
-                </div>
-              )}
-
-              {/* Inventory search results */}
-              {searchResults.inventories.length > 0 && (
-                <div
-                  className={`mb-8 ${
-                    mounted
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 -translate-y-2"
-                  } transition-all duration-300`}
-                >
-                  <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
-                    INVENTORIES ({searchResults.inventories.length})
-                  </h3>
-                  <TableView
-                    data={searchResults.inventories}
-                    columns={[
-                      {
-                        key: "name",
-                        label: "NAME",
-                      },
-                      {
-                        key: "description",
-                        label: "DESCRIPTION",
-                      },
-                      {
-                        key: "items",
-                        label: "ITEMS",
-                        render: (inventory) => (
-                          <span>
-                            {
-                              items.filter(
-                                (item) => item.inventory_id === inventory.id
-                              ).length
-                            }
-                          </span>
-                        ),
-                      },
-                      {
-                        key: "created_at",
-                        label: "CREATED",
-                        render: (inventory) => (
-                          <span>
-                            {new Date(
-                              inventory.created_at
-                            ).toLocaleDateString()}
-                          </span>
-                        ),
-                      },
-                    ]}
-                    onEdit={handleEditInventory}
-                    onDelete={handleDeleteInventory}
-                    onSelect={setSelectedInventory}
-                    defaultViewMode="grid"
-                  />
-                </div>
-              )}
-
-              {/* Item search results */}
-              {searchResults.items.length > 0 && (
-                <div
-                  className={`mb-8 ${
-                    mounted
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 -translate-y-2"
-                  } transition-all duration-300`}
-                >
-                  <h3 className="text-lg font-light text-gray-400 tracking-wider mb-4">
-                    ITEMS ({searchResults.items.length})
-                  </h3>
-                  <TableView
-                    data={searchResults.items}
-                    columns={[
-                      {
-                        key: "name",
-                        label: "NAME",
-                      },
-                      {
-                        key: "quantity",
-                        label: "QUANTITY",
-                      },
-                      {
-                        key: "price",
-                        label: "PRICE",
-                        render: (item) =>
-                          item.price ? `$${item.price.toFixed(2)}` : "-",
-                      },
-                      {
-                        key: "description",
-                        label: "DESCRIPTION",
-                      },
-                      {
-                        key: "color",
-                        label: "COLOR",
-                        render: (item) =>
-                          item.color ? (
-                            <div className="flex items-center space-x-2">
-                              <div
-                                className="w-4 h-4 rounded-full"
-                                style={{ backgroundColor: item.color }}
-                              ></div>
-                              <span>{item.color}</span>
-                            </div>
-                          ) : (
-                            "-"
-                          ),
-                      },
-                      {
-                        key: "inventory",
-                        label: "INVENTORY",
-                        render: (item) => {
-                          const inv = inventories.find(
-                            (i) => i.id === item.inventory_id
-                          );
-                          return inv ? inv.name : "-";
-                        },
-                      },
-                      {
-                        key: "created_at",
-                        label: "CREATED",
-                        render: (item) => (
-                          <span>
-                            {new Date(item.created_at).toLocaleDateString()}
-                          </span>
-                        ),
-                      },
-                    ]}
-                    onEdit={handleEditItem}
-                    onDelete={handleDeleteItem}
-                    onSelect={setSelectedItem}
-                    defaultViewMode="table"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Normal Content (when not searching) */}
-
-          {/* Space List */}
-          {!searchResults.isSearching && (
-            <div
-              className={`${
-                mounted
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-2"
-              } transition-all duration-300`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-light text-white tracking-wider">
-                  SPACES
-                </h2>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setActiveModal("space")}
-                    disabled={!selectedGroupId}
-                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors mr-2"
-                    title="Add Space"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                  <div className="flex items-center bg-zinc-900 border border-zinc-800 p-1">
-                    <button
-                      onClick={() => setSpacesViewMode("grid")}
-                      className={`p-1 ${
-                        spacesViewMode === "grid"
-                          ? "bg-zinc-800 text-white"
-                          : "text-gray-500 hover:text-white"
-                      }`}
-                    >
-                      <Grid className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setSpacesViewMode("table")}
-                      className={`p-1 ${
-                        spacesViewMode === "table"
-                          ? "bg-zinc-800 text-white"
-                          : "text-gray-500 hover:text-white"
-                      }`}
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {spaces.length === 0 ? (
-                <p className="text-gray-500">No spaces available</p>
-              ) : (
-                <TableView
-                  data={spaces}
-                  columns={[
-                    {
-                      key: "name",
-                      label: "NAME",
-                    },
-                    {
-                      key: "description",
-                      label: "DESCRIPTION",
-                    },
-                    {
-                      key: "inventories",
-                      label: "INVENTORIES",
-                      render: (space) => (
-                        <span>
-                          {
-                            inventories.filter(
-                              (inv) => inv.parent_space_id === space.id
-                            ).length
-                          }
-                        </span>
-                      ),
-                    },
-                    {
-                      key: "created_at",
-                      label: "CREATED",
-                      render: (space) => (
-                        <span>
-                          {new Date(space.created_at).toLocaleDateString()}
-                        </span>
-                      ),
-                    },
-                  ]}
-                  onEdit={handleEditSpace}
-                  onDelete={handleDeleteSpace}
-                  onSelect={handleSelectSpace}
-                  selectedItemId={
-                    selectedSpace ? (selectedSpace as Space).id : null
-                  }
-                  defaultViewMode="grid"
-                  viewMode={spacesViewMode}
-                  showViewToggle={false}
-                  onDrop={async (target: any, payload) => {
-                    if (payload.type === "item") {
-                      await handleMoveItemToSpace(target.id, payload);
+                    selectedItemId={
+                      selectedSpace ? (selectedSpace as Space).id : null
                     }
-                  }}
-                />
+                    defaultViewMode="grid"
+                    viewMode={spacesViewMode}
+                    showViewToggle={false}
+                    onDrop={async (target: any, payload) => {
+                      if (payload.type === "item") {
+                        await handleMoveItemToSpace(target.id, payload);
+                      }
+                    }}
+                  />
+                </div>
               )}
             </div>
           )}
@@ -1061,11 +1122,11 @@ const Dashboard: React.FC = () => {
               className={`mt-8 ${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-2"
-              } transition-all duration-300`}
+                  : "opacity-0 translate-y-6"
+              } transition-all duration-600 ease-out delay-200`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-light text-white tracking-wider">
+              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
+                <h2 className="text-lg sm:text-xl font-light text-white tracking-wider">
                   INVENTORIES
                 </h2>
                 <div className="flex items-center space-x-2">
@@ -1088,7 +1149,7 @@ const Dashboard: React.FC = () => {
                       setActiveModal("inventory");
                     }}
                     disabled={!selectedGroupId}
-                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors mr-2"
+                    className="bg-zinc-900 border border-zinc-800 px-3 py-2 font-light text-sm tracking-wider text-white hover:border-white transition-colors"
                     title="Add Inventory"
                   >
                     <Plus className="w-4 h-4" />
@@ -1126,58 +1187,68 @@ const Dashboard: React.FC = () => {
               ).length === 0 ? (
                 <p className="text-gray-500">No inventories available</p>
               ) : (
-                <TableView
-                  data={
-                    selectedSpace
-                      ? inventories.filter(
-                          (inv) => inv.parent_space_id === selectedSpace.id
-                        )
-                      : inventories
-                  }
-                  columns={[
-                    { key: "name", label: "NAME" },
-                    { key: "description", label: "DESCRIPTION" },
-                    {
-                      key: "items",
-                      label: "ITEMS",
-                      render: (inventory: Inventory) => (
-                        <span>
-                          {
-                            items.filter(
-                              (item) => item.inventory_id === inventory.id
-                            ).length
-                          }
-                        </span>
-                      ),
-                    },
-                    {
-                      key: "created_at",
-                      label: "CREATED",
-                      render: (inventory: Inventory) => (
-                        <span>
-                          {new Date(inventory.created_at).toLocaleDateString()}
-                        </span>
-                      ),
-                    },
-                  ]}
-                  onEdit={handleEditInventory}
-                  onDelete={handleDeleteInventory}
-                  onSelect={(inv: Inventory) => setSelectedInventory(inv)}
-                  selectedItemId={
-                    selectedInventory
-                      ? (selectedInventory as Inventory).id
-                      : null
-                  }
-                  defaultViewMode="grid"
-                  viewMode={inventoriesViewMode}
-                  showViewToggle={false}
-                  onDrop={async (target: any, payload) => {
-                    // if payload.type is 'item', move that item into this inventory
-                    if (payload.type === "item") {
-                      await handleMoveItemToInventory(target.id, payload);
+                <div
+                  className={`${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-4"
+                  } transition-all duration-600 ease-out delay-200`}
+                >
+                  <TableView
+                    data={
+                      selectedSpace
+                        ? inventories.filter(
+                            (inv) => inv.parent_space_id === selectedSpace.id
+                          )
+                        : inventories
                     }
-                  }}
-                />
+                    columns={[
+                      { key: "name", label: "NAME" },
+                      { key: "description", label: "DESCRIPTION" },
+                      {
+                        key: "items",
+                        label: "ITEMS",
+                        render: (inventory: Inventory) => (
+                          <span>
+                            {
+                              items.filter(
+                                (item) => item.inventory_id === inventory.id
+                              ).length
+                            }
+                          </span>
+                        ),
+                      },
+                      {
+                        key: "created_at",
+                        label: "CREATED",
+                        render: (inventory: Inventory) => (
+                          <span>
+                            {new Date(
+                              inventory.created_at
+                            ).toLocaleDateString()}
+                          </span>
+                        ),
+                      },
+                    ]}
+                    onEdit={handleEditInventory}
+                    onDelete={handleDeleteInventory}
+                    onSelect={(inv: Inventory) => setSelectedInventory(inv)}
+                    selectedItemId={
+                      selectedInventory
+                        ? (selectedInventory as Inventory).id
+                        : null
+                    }
+                    defaultViewMode="grid"
+                    viewMode={inventoriesViewMode}
+                    showViewToggle={false}
+                    onDrop={async (target: any, payload) => {
+                      // if payload.type is 'item', move that item into this inventory
+                      if (payload.type === "item") {
+                        await handleMoveItemToInventory(target.id, payload);
+                      }
+                    }}
+                  />
+                </div>
               )}
             </div>
           )}
@@ -1188,11 +1259,11 @@ const Dashboard: React.FC = () => {
               className={`mt-6 ${
                 mounted
                   ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-2"
-              } transition-all duration-300`}
+                  : "opacity-0 translate-y-6"
+              } transition-all duration-600 ease-out delay-300`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-light text-gray-400 tracking-wider">
+              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
+                <h3 className="text-base sm:text-lg font-light text-gray-400 tracking-wider">
                   ITEMS IN {selectedInventory.name}
                 </h3>
                 <div className="flex items-center space-x-2">
@@ -1236,55 +1307,63 @@ const Dashboard: React.FC = () => {
               ).length === 0 ? (
                 <p className="text-gray-500">No items in this inventory</p>
               ) : (
-                <TableView
-                  data={items.filter(
-                    (item) => item.inventory_id === selectedInventory.id
-                  )}
-                  columns={[
-                    { key: "name", label: "NAME" },
-                    { key: "quantity", label: "QUANTITY" },
-                    {
-                      key: "price",
-                      label: "PRICE",
-                      render: (item: Item) =>
-                        item.price ? `$${item.price.toFixed(2)}` : "-",
-                    },
-                    { key: "description", label: "DESCRIPTION" },
-                    {
-                      key: "color",
-                      label: "COLOR",
-                      render: (item: Item) =>
-                        item.color ? (
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className="w-4 h-4 rounded-full"
-                              style={{ backgroundColor: item.color }}
-                            ></div>
-                            <span>{item.color}</span>
-                          </div>
-                        ) : (
-                          "-"
+                <div
+                  className={`${
+                    mounted
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-4"
+                  } transition-all duration-600 ease-out delay-300`}
+                >
+                  <TableView
+                    data={items.filter(
+                      (item) => item.inventory_id === selectedInventory.id
+                    )}
+                    columns={[
+                      { key: "name", label: "NAME" },
+                      { key: "quantity", label: "QUANTITY" },
+                      {
+                        key: "price",
+                        label: "PRICE",
+                        render: (item: Item) =>
+                          item.price ? `$${item.price.toFixed(2)}` : "-",
+                      },
+                      { key: "description", label: "DESCRIPTION" },
+                      {
+                        key: "color",
+                        label: "COLOR",
+                        render: (item: Item) =>
+                          item.color ? (
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-4 h-4 rounded-full"
+                                style={{ backgroundColor: item.color }}
+                              ></div>
+                              <span>{item.color}</span>
+                            </div>
+                          ) : (
+                            "-"
+                          ),
+                      },
+                      {
+                        key: "created_at",
+                        label: "CREATED",
+                        render: (item: Item) => (
+                          <span>
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
                         ),
-                    },
-                    {
-                      key: "created_at",
-                      label: "CREATED",
-                      render: (item: Item) => (
-                        <span>
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </span>
-                      ),
-                    },
-                  ]}
-                  onEdit={handleEditItem}
-                  onDelete={handleDeleteItem}
-                  onSelect={setSelectedItem}
-                  selectedItemId={selectedItem?.id ?? null}
-                  defaultViewMode="table"
-                  viewMode={itemsViewMode}
-                  showViewToggle={false}
-                  dragType="item"
-                />
+                      },
+                    ]}
+                    onEdit={handleEditItem}
+                    onDelete={handleDeleteItem}
+                    onSelect={setSelectedItem}
+                    selectedItemId={selectedItem?.id ?? null}
+                    defaultViewMode="table"
+                    viewMode={itemsViewMode}
+                    showViewToggle={false}
+                    dragType="item"
+                  />
+                </div>
               )}
             </div>
           )}
